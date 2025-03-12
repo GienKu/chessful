@@ -1,0 +1,37 @@
+import { useAppDispatch, useAppSelector } from '../features/redux/hooks';
+import {
+  AuthSliceState,
+  setUser,
+  clearUser,
+} from '../features/redux/authSlice';
+import { useNavigate } from 'react-router-dom';
+
+export const useAuth = () => {
+  const dispatch = useAppDispatch();
+  const authState = useAppSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  const userLogin = (payload: AuthSliceState) => dispatch(setUser(payload));
+  const userLogout = async () => {
+    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    switch (res.status) {
+      case 401:
+        navigate('/unauthorized');
+        break;
+      case 403:
+        navigate('/forbidden');
+        break;
+      case 200:
+        dispatch(clearUser());
+        break;
+      default:
+        console.error('User logout failed');
+    }
+  };
+
+  return { authState, userLogin, userLogout };
+};
