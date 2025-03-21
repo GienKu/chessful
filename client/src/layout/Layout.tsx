@@ -11,7 +11,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <>
       <Header />
-      <Box component="main" minHeight={'100%'} bgcolor="background.default">
+      <Box
+        component="main"
+        sx={{
+          height: '100%',
+        }}
+        bgcolor="background.default"
+      >
         {children}
       </Box>
       <Footer />

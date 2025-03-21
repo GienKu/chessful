@@ -8,8 +8,7 @@ import {
   Alert,
 } from '@mui/material';
 import { ApiErrorResponse } from '../../../../interfaces/ApiResponses';
-import { useAppDispatch } from '../../features/redux/hooks';
-import { setUser } from '../../features/redux/authSlice';
+
 import { useAuth } from '../../hooks/useAuth';
 
 type Props = {

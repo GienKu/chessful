@@ -7,11 +7,10 @@ import NotFound from './pages/NotFound';
 import EmailVerificationOutcome from './pages/EmailVerificationOutcome';
 import Unauthorized from './pages/Unauthorized';
 import Forbidden from './pages/Forbidden';
+import SocketProvider from './components/SocketProvider/SocketProvider';
+import ActiveGame from './pages/ActiveGame';
 // import ProtectedRoutes from './components/ProtectedRoutes/ProtectedRoutes';
-// import Login from './pages/Login';
 // import Unauthorized from './pages/Unauthorized';
-// import EmailVerificationFailure from './pages/EmailVerificationFailure';
-// import EmailVerificationSuccess from './pages/EmailVerificationSuccess';
 // import ResetPassword from './pages/ResetPassword';
 // import NewPasswordForm from './pages/NewPasswordForm';
 // import GeneralErrorBoundary from './components/GeneralErrorBoundary/GeneralErrorBoundary';
@@ -21,33 +20,35 @@ function App() {
     <>
       <ThemeProvider theme={theme}>
         {/* <GeneralErrorBoundary> */}
-        <Layout>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />}></Route>
-            {/* <Route path="login" element={<Login />}></Route> */}
-            <Route path="unauthorized" element={<Unauthorized />}></Route>
-            <Route path="forbidden" element={<Forbidden />}></Route>
+        <SocketProvider>
+          <Layout>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Home />}></Route>
+              {/* <Route path="login" element={<Login />}></Route> */}
+              <Route path="unauthorized" element={<Unauthorized />}></Route>
+              <Route path="forbidden" element={<Forbidden />}></Route>
 
-            {/* 
+              {/* 
             <Route
-              path="new-password/:token"
-              element={<NewPasswordForm />}
+            path="new-password/:token"
+            element={<NewPasswordForm />}
             ></Route> */}
-            <Route
-              path="verification-failure"
-              element={<EmailVerificationOutcome isVerified={false} />}
-            ></Route>
-            <Route
-              path="verification-success"
-              element={<EmailVerificationOutcome isVerified={true} />}
-            ></Route>
+              <Route
+                path="verification-failure"
+                element={<EmailVerificationOutcome isVerified={false} />}
+              ></Route>
+              <Route path="game/:gameId" element={<ActiveGame />}></Route>
+              <Route
+                path="verification-success"
+                element={<EmailVerificationOutcome isVerified={true} />}
+              ></Route>
 
-            <Route path="*" element={<NotFound />}></Route>
+              <Route path="*" element={<NotFound />}></Route>
 
-            {/* Protected routes */}
+              {/* Protected routes */}
 
-            {/* <Route
+              {/* <Route
                 element={
                   <ProtectedRoutes
                   neededPermission={[PERMISSIONS.canViewLicensePage]}
@@ -56,8 +57,9 @@ function App() {
                   >
                   <Route path="licencja" element={<SystemInformation />}></Route>
                   </Route> */}
-          </Routes>
-        </Layout>
+            </Routes>
+          </Layout>
+        </SocketProvider>
         {/* </GeneralErrorBoundary> */}
       </ThemeProvider>
     </>

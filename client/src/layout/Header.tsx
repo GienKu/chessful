@@ -10,31 +10,50 @@ import logo from '../assets/logo.png';
 import Button from '@mui/material/Button';
 import LoginModal from '../components/LoginModal/LoginModal';
 import RegisterModal from '../components/RegisterModal/RegisterModal';
-import { useAppSelector } from '../features/redux/hooks';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const [navbarOpen, setNavbarOpen] = useState<boolean>(false);
   const [loginModalOpen, setLoginModalOpen] = useState<boolean>(false);
   const [registerModalOpen, setRegisterModalOpen] = useState<boolean>(false);
+  const navigate = useNavigate();
   const { authState, userLogout } = useAuth();
+  const guestId = localStorage.getItem('guestId');
   return (
     <Box sx={{ position: 'relative', zIndex: 9999 }}>
       <AppBar
-        sx={{ borderBottom: '1px solid', borderColor: 'secondary.main' }}
+        sx={{
+          borderBottom: '1px solid',
+          borderColor: 'secondary.main',
+        }}
         elevation={10}
         component={'header'}
         position="static"
       >
-        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Toolbar
+          sx={{
+            display: 'flex',
+            justifyContent: { xs: 'center', sm: 'space-between' },
+          }}
+        >
           <Stack direction="row" spacing={1}>
             <img
               src={logo}
               alt="logo"
               style={{ height: '30px', marginRight: '10px' }}
             />
-            <Typography variant="h6" sx={{ display: 'flex' }}>
+            <Typography
+              variant="h6"
+              sx={{
+                cursor: 'pointer',
+                display: { xs: 'none', sm: 'flex' },
+              }}
+              onClick={() => {
+                navigate('/');
+              }}
+            >
               {['C', 'h', 'e', 's', 's', 'f', 'u', 'l'].map((letter, index) => (
                 <Box
                   key={index}
@@ -69,6 +88,10 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
+                <Typography
+                  sx={{ display: { xs: 'none', sm: 'block' } }}
+                >{`Guest+${guestId}`}</Typography>
+                <Divider orientation="vertical" flexItem />
                 <Button
                   variant="contained"
                   size="small"

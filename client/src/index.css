@@ -5,12 +5,19 @@
   box-sizing: border-box;
 }
 #root {
-  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  align-items: start;
+  align-self: flex-start;
+  align-content: start;
 }
 
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
+  width: 100vw;
 }
 
 img {

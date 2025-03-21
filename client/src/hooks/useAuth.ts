@@ -5,13 +5,19 @@ import {
   clearUser,
 } from '../features/redux/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from './useSocket';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const authState = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
+  const { socket, socketRefresh } = useSocket();
 
-  const userLogin = (payload: AuthSliceState) => dispatch(setUser(payload));
+  const userLogin = (payload: AuthSliceState) => {
+    socketRefresh();
+    dispatch(setUser(payload));
+  };
+
   const userLogout = async () => {
     const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/logout`, {
       method: 'POST',
@@ -27,6 +33,7 @@ export const useAuth = () => {
         break;
       case 200:
         dispatch(clearUser());
+        socket?.disconnect().connect();
         break;
       default:
         console.error('User logout failed');
