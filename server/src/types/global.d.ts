@@ -23,4 +23,13 @@ declare global {
 
     export interface User extends UserType {}
   }
+  interface Player {
+    id: string;
+    username: string;
+    rating: number | null;
+    color: 'w' | 'b';
+  }
+
+  type Tempo = `${number}+${number}`;
+  type GameType = 'classical' | 'blitz' | 'bullet' | 'rapid';
 }
