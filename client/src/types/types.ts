@@ -24,16 +24,23 @@ export interface GameState {
     username: string;
     rating: number | null;
     color: 'w' | 'b';
+    connected: boolean;
   };
   opponent: {
     id: string;
     username: string;
     rating: number | null;
     color: 'w' | 'b';
+    connected: boolean;
   };
   fen: string;
   hasStarted: boolean;
   gameOver: boolean;
+  endedByTimeout: boolean;
+  endedByDraw: boolean;
+  whoResigned: 'w' | 'b' | null;
+  whoDisconnected: 'w' | 'b' | null;
+  drawOfferedById: string | null;
   winner: 'w' | 'b' | 'd' | null;
   turn: 'w' | 'b';
   checkmate: boolean;
@@ -50,6 +57,7 @@ export interface GameState {
   };
   validMoves: Move[];
   lastMove?: Move;
+  rematchOfferedById: string | null;
 }
 
 export type Promotion = Exclude<PieceType, 'p' | 'k'>;

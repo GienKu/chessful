@@ -33,12 +33,30 @@ export const useAuth = () => {
         break;
       case 200:
         dispatch(clearUser());
-        socket?.disconnect().connect();
+        socketRefresh();
         break;
       default:
         console.error('User logout failed');
     }
   };
 
-  return { authState, userLogin, userLogout };
+  const getUserData = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/user`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(setUser(data.data));
+      } else {
+        console.error('Failed to fetch user data');
+      }
+    } catch (error) {
+      console.error('An error occurred while fetching user data:', error);
+    }
+  };
+
+  return { authState, userLogin, userLogout, getUserData };
 };

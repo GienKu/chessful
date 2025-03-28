@@ -50,7 +50,7 @@ const Home = () => {
           gap={2}
           sx={{ width: '100%' }}
         >
-          <FriendsList />
+          <FriendsList withHeader scroll />
           <PastGames />
         </Stack>
       </Container>

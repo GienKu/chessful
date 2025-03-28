@@ -6,8 +6,10 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 import { Box } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 type Props = {
   open: boolean;
@@ -15,6 +17,7 @@ type Props = {
 };
 
 const NavigationDrawer = ({ open, setOpen }: Props) => {
+  const navigate = useNavigate();
   return (
     <>
       <Drawer
@@ -51,6 +54,22 @@ const NavigationDrawer = ({ open, setOpen }: Props) => {
                 <ManageSearchIcon color="primary" />
               </ListItemIcon>
               <ListItemText primary={'Analyze games'} />
+            </ListItem>
+
+            <ListItem
+              sx={{
+                cursor: 'pointer',
+                ':hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+              }}
+              onClick={() => {
+                navigate('/friends');
+                setOpen(false);
+              }}
+            >
+              <ListItemIcon>
+                <PeopleAltIcon color="secondary" />
+              </ListItemIcon>
+              <ListItemText primary={'Friends'} />
             </ListItem>
           </List>
         </Box>

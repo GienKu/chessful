@@ -25,20 +25,34 @@ const useWebSockets = (app: Application) => {
   const gameService = GameService.getInstance(io);
 
   io.on('connection', (socket: Socket) => {
-    const username = socket.user?.username || socket.guest?.username;
-    const id = socket.user?._id || socket.guest?.id;
+    const user = socket.user || socket.guest;
+    const type = socket.user ? 'user' : 'guest';
+
+    if (!user) {
+
+      return;
+    }
 
     socket.emit('connected', {
-      id,
-      username,
+      id: user.id,
+      username: user.username,
+      type,
     });
 
-    console.log(`${id} connected: ${username}`);
+    console.log(
+      `Socket:${user.id} has connected with ${
+        socket.user ? 'user' : 'guest'
+      }: ${user.username}`
+    );
 
     gameService.registerEventHandlers(socket);
 
     socket.on('disconnect', () => {
-      console.log(`${id} disconnected: ${username}`);
+      console.log(
+        `Socket:${user.id} has disconnected with ${
+          socket.user ? 'user' : 'guest'
+        }: ${user.username}`
+      );
     });
   });
 

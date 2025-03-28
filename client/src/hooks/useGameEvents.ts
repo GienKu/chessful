@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSocket } from './useSocket';
 import { GameState, Promotion } from '../types/types';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Square } from 'chess.js';
+import { Move, Square } from 'chess.js';
+import { useAudio } from '../hooks/useAudio';
+import moveSound from '../assets/sounds/move3.mp3';
+import captureSound from '../assets/sounds/takingPieceMove.mp3';
 
 export function useGameEvents() {
   const { socket, player } = useSocket(); // Get socket instance from context
@@ -13,6 +16,8 @@ export function useGameEvents() {
     owner: 0,
     opponent: 0,
   });
+  const [playMoveSound] = useAudio(moveSound);
+  const [playCaptureSound] = useAudio(captureSound);
 
   const navigate = useNavigate();
 
@@ -32,19 +37,18 @@ export function useGameEvents() {
       }, 5000);
     });
 
-    socket.on('timerUpdate', (data) => {
-      console.log(data);
-      setTimer(data);
+    socket.on('moveMade', (move: Move) => {
+      console.log('move made sound');
+      if (move.captured) {
+        playCaptureSound();
+      } else {
+        playMoveSound();
+      }
     });
 
-    // // Component-specific listeners
-    // socket.on('moveMade', (move) => {
-    //   setGameState((prev) => prev ? { ...prev, lastMove: move } : null);
-    // });
-
-    // socket.on('gameTimer', (timerData) => {
-    //   setGameState((prev) => prev ? { ...prev, timer: timerData } : null);
-    // });
+    socket.on('timerUpdate', (data) => {
+      setTimer(data);
+    });
 
     return () => {
       //   Clean up component-specific listeners
@@ -83,23 +87,11 @@ export function useGameEvents() {
     from: Square;
     to: Square;
     promotion?: Promotion;
-  }): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (gameState) {
-        socket?.emit(
-          'makeMove',
-          { gameId: gameState.gameId, move },
-          (wasValid: boolean) => {
-            resolve(wasValid);
-          }
-        );
-      } else {
-        resolve(false);
-      }
-    });
+  }) => {
+    if (gameState) socket?.emit('makeMove', { gameId: gameState.gameId, move });
   };
 
-  const leaveGame = () => {
+  const handleLeavingGame = () => {
     console.log('leaving game');
     if (gameState) {
       socket?.emit(
@@ -113,6 +105,60 @@ export function useGameEvents() {
       );
     }
   };
+  const handleResign = () => {
+    console.log('resign game');
+    if (gameState) {
+      socket?.emit('resign', {
+        gameId: gameState.gameId,
+      });
+    }
+  };
 
-  return { gameState, makeMove, leaveGame, message, setMessage, timer };
+  const handleOfferDraw = () => {
+    if (gameState) {
+      socket?.emit('offerDraw', {
+        gameId: gameState.gameId,
+      });
+    }
+  };
+
+  const handleOfferDrawResponse = (isAccepted: boolean) => {
+    if (gameState) {
+      socket?.emit('offerDrawResponse', {
+        gameId: gameState.gameId,
+        isAccepted,
+      });
+    }
+  };
+
+  const handleRematchOffer = () => {
+    if (gameState) {
+      socket?.emit('offerRematch', {
+        gameId: gameState.gameId,
+      });
+    }
+  };
+
+  const handleRematchResponse = (isAccepted: boolean) => {
+    if (gameState) {
+      socket?.emit('offerRematchResponse', {
+        gameId: gameState.gameId,
+        isAccepted,
+      });
+    }
+  };
+
+  return {
+    gameState,
+    makeMove,
+    handleLeavingGame,
+    handleResign,
+    handleOfferDraw,
+    handleOfferDrawResponse,
+    handleRematchOffer,
+    handleRematchResponse,
+    message,
+    setMessage,
+    timer,
+  };
 }

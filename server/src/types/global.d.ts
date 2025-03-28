@@ -21,13 +21,16 @@ declare global {
       parentId: string;
     }
 
-    export interface User extends UserType {}
+    export interface User extends UserType {
+      id: string;
+    }
   }
   interface Player {
     id: string;
     username: string;
     rating: number | null;
     color: 'w' | 'b';
+    connected: boolean;
   }
 
   type Tempo = `${number}+${number}`;

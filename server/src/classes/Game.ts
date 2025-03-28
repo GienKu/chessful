@@ -1,4 +1,9 @@
 import { Chess, ChessInstance, ShortMove } from 'chess.js';
+import { updatePlayerRanking } from '../services/updatePlayerRanking';
+import { saveGame } from '../services/saveGame';
+import { IGame } from '../db/models/Game';
+import mongoose, { ObjectId } from 'mongoose';
+import { calcNewRatings } from '../utils/calcNewRatings';
 
 interface Timer {
   owner: number;
@@ -11,25 +16,29 @@ export type GameState = ReturnType<Game['getState']>;
 
 export class Game {
   id: string;
-  type: GameType = 'rapid';
-  _game: ChessInstance;
-  private owner: Player | null = null;
-  private opponent: Player | null = null;
-  private ranked: boolean;
-  private tempo: Tempo;
+  type: GameType;
+  game: ChessInstance;
+  owner: Player | null = null;
+  opponent: Player | null = null;
+  ranked: boolean;
+  tempo: Tempo;
   timer: Timer = {
     owner: 0,
     opponent: 0,
     increment: 0,
     gameInterval: null,
   };
-  private playerCount: number = 0;
-  hasStarted: boolean = false;
   emittingInterval: NodeJS.Timeout | null = null;
+  playerCount: number = 0;
+  hasStarted: boolean = false;
   endedByTimeout: boolean = false;
+  endedByDraw: boolean = false;
+  whoDisconnected: 'w' | 'b' | null = null;
+  whoResigned: 'w' | 'b' | null = null;
+  rematchOfferedById: string | null = null;
 
   constructor(tempo: Tempo, ranked: boolean, type: GameType, owner: Player) {
-    this._game = new Chess();
+    this.game = new Chess();
     this.owner = owner;
     this.tempo = tempo;
     this.setTimer(tempo);
@@ -47,12 +56,13 @@ export class Game {
       gameInterval: null,
     };
   }
-  winner: 'w' | 'b' | 'd' | null = null;
+  winner: 'w' | 'b' | null = null;
+  drawOfferedById: string | null = null;
 
   getState() {
-    const history = this._game.history({ verbose: true });
-    const winner = this._game.game_over()
-      ? this._game.turn() === 'w'
+    const history = this.game.history({ verbose: true });
+    const winner = this.game.game_over()
+      ? this.game.turn() === 'w'
         ? 'b'
         : 'w'
       : null;
@@ -64,23 +74,31 @@ export class Game {
       ranked: this.ranked,
       owner: this.owner,
       opponent: this.opponent,
-      fen: this._game.fen(),
+      fen: this.game.fen(),
       hasStarted: this.hasStarted,
-      gameOver: this._game.game_over() || this.endedByTimeout,
-      winner: winner,
-      turn: this._game.turn(),
-      check: this._game.in_check(),
-      checkmate: this._game.in_checkmate(),
+      gameOver: this.isGameOver(),
+      endedByTimeout: this.endedByTimeout,
+      endedByDraw: this.endedByDraw,
+      whoResigned: this.whoResigned,
+      whoDisconnected: this.whoDisconnected,
+      drawOfferedById: this.drawOfferedById,
+      winner: this.winner,
+      turn: this.game.turn(),
+      check: this.game.in_check(),
+      checkmate: this.game.in_checkmate(),
       posOfKingInCheck: this.positionOfKingInCheck(),
-      stalemate: this._game.in_stalemate(),
-      insufficientMaterial: this._game.insufficient_material(),
-      threefoldRepetition: this._game.in_threefold_repetition(),
-      fiftyMoveRule: this._game.in_draw(),
-      draw: this._game.in_draw(),
-      validMoves: this._game.moves({ verbose: true, legal: true }),
+      stalemate: this.game.in_stalemate(),
+      insufficientMaterial: this.game.insufficient_material(),
+      threefoldRepetition: this.game.in_threefold_repetition(),
+      fiftyMoveRule: this.game.in_draw(),
+      draw: this.isDraw(),
+      validMoves: this.isGameOver()
+        ? []
+        : this.game.moves({ verbose: true, legal: true }),
+      rematchOfferedById: this.rematchOfferedById,
       lastMove:
         history.length >= 1 &&
-        this._game.history({ verbose: true })[history.length - 1],
+        this.game.history({ verbose: true })[history.length - 1],
     };
   }
 
@@ -105,7 +123,7 @@ export class Game {
   isPlayersTurn(playerId: string) {
     const playerToMove =
       playerId === this.owner?.id ? this.owner : this.opponent;
-    return playerToMove?.color === this._game.turn();
+    return playerToMove?.color === this.game.turn();
   }
 
   doesPlayerBelongToGame(playerId: string) {
@@ -113,9 +131,9 @@ export class Game {
   }
 
   positionOfKingInCheck() {
-    if (this._game.in_checkmate() || this._game.in_check()) {
-      const board = this._game.board();
-      const turn = this._game.turn();
+    if (this.game.in_checkmate() || this.game.in_check()) {
+      const board = this.game.board();
+      const turn = this.game.turn();
 
       for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
@@ -133,8 +151,40 @@ export class Game {
     this.startTimer();
   }
 
+  isGameOver() {
+    return (
+      this.game.game_over() ||
+      this.endedByTimeout ||
+      this.isDraw() ||
+      !!this.whoResigned
+    );
+  }
+
+  isDraw() {
+    return (
+      this.game.in_draw() ||
+      this.game.in_stalemate() ||
+      this.game.insufficient_material() ||
+      this.game.in_threefold_repetition() ||
+      this.endedByDraw // players accepted draw
+    );
+  }
+
+  reset() {
+    this.clearIntervals();
+    this.game.reset();
+    this.hasStarted = false;
+    this.endedByTimeout = false;
+    this.endedByDraw = false;
+    this.winner = null;
+    this.whoResigned = null;
+    this.drawOfferedById = null;
+    this.rematchOfferedById = null;
+    this.setTimer(this.tempo);
+  }
+
   move(move: string | ShortMove) {
-    const moveResult = this._game.move(move);
+    const moveResult = this.game.move(move);
 
     if (moveResult) {
       this.incrementTimer();
@@ -142,19 +192,176 @@ export class Game {
     return moveResult;
   }
 
+  handleGameEnd() {
+    if (this.game.in_checkmate()) {
+      this.winner = this.game.turn() === 'w' ? 'b' : 'w';
+    } else if (this.isDraw()) {
+      this.endedByDraw = true;
+    }
+
+    if (this.winner || this.endedByDraw) {
+      this.postGameProcessing();
+    }
+  }
+
+  resign(playerId: string) {
+    if (!this.owner || !this.opponent) return false;
+
+    if (this.owner?.id === playerId || this.opponent?.id === playerId) {
+      const resigningPlayer =
+        this.owner?.id === playerId ? this.owner : this.opponent;
+      const winningPlayer =
+        resigningPlayer === this.owner ? this.opponent : this.owner;
+
+      this.whoResigned = resigningPlayer!.color;
+      this.winner = winningPlayer!.color;
+      this.postGameProcessing();
+      return true;
+    }
+    return false;
+  }
+
+  endGameDueToDisconnection(discPlayerId: string) {
+    this.whoDisconnected =
+      this.owner?.id == discPlayerId
+        ? this.owner?.color ?? null
+        : this.opponent?.color ?? null;
+    this.winner = this.whoDisconnected === 'w' ? 'b' : 'w';
+    this.postGameProcessing();
+  }
+
+  drawOffered(playerId: string) {
+    this.drawOfferedById = playerId;
+  }
+
+  drawDeclined() {
+    this.drawOfferedById = null;
+  }
+
+  drawAccepted() {
+    this.endedByDraw = true;
+    this.postGameProcessing();
+  }
+
+  rematchOffered(playerId: string) {
+    this.rematchOfferedById = playerId;
+  }
+
+  rematchDeclined() {
+    this.rematchOfferedById = null;
+  }
+
+  rematchAccepted() {
+    this.reset();
+    this.owner!.color = this.owner!.color === 'w' ? 'b' : 'w';
+    this.opponent!.color = this.opponent!.color === 'w' ? 'b' : 'w';
+  }
+
+  async updateRating() {
+    if (!this.owner || !this.opponent || !this.winner || !this.ranked) return;
+
+    try {
+      const winnerPlayer =
+        this.winner === this.owner.color ? this.owner : this.opponent;
+      const loserPlayer =
+        this.winner === this.opponent.color ? this.owner : this.opponent;
+
+      //check if players weren't guests
+      if (winnerPlayer.rating === null || loserPlayer.rating === null) return;
+
+      const { newRating1, newRating2 } = calcNewRatings(
+        winnerPlayer.rating,
+        loserPlayer.rating,
+        1,
+        32
+      );
+
+      winnerPlayer.rating = newRating1;
+      loserPlayer.rating = newRating2;
+
+      //db update
+      await updatePlayerRanking(winnerPlayer.id, newRating1, this.type);
+      await updatePlayerRanking(loserPlayer.id, newRating2, this.type);
+    } catch (error) {
+      console.error('Failed to update ratings:', error);
+    }
+  }
+
+  async saveGame() {
+    try {
+      //todo add other checks later
+      if (!this.owner || !this.opponent) return;
+      if (this.owner.rating === null || this.opponent.rating === null) return;
+
+      const gameData = {
+        whitePlayer:
+          this.owner.color === 'w'
+            ? new mongoose.Types.ObjectId(this.owner.id)
+            : new mongoose.Types.ObjectId(this.opponent.id),
+        blackPlayer:
+          this.owner.color === 'b'
+            ? new mongoose.Types.ObjectId(this.owner.id)
+            : new mongoose.Types.ObjectId(this.opponent.id),
+        whiteRating:
+          this.owner.color === 'w' ? this.owner.rating! : this.opponent.rating!,
+        blackRating:
+          this.owner.color === 'b' ? this.owner.rating! : this.opponent.rating!,
+        pgn: this.game.pgn(),
+        winner: this.winner,
+        gameType: this.type,
+        ranked: this.ranked,
+        tempo: this.tempo,
+        endedByTimeout: this.endedByTimeout,
+        endedByDraw: this.isDraw(),
+        endedByCheckmate: this.game.in_checkmate(),
+        endedByStalemate: this.game.in_stalemate(),
+        endedByResignation: !!this.whoResigned || !!this.whoDisconnected,
+      };
+
+      await saveGame(gameData);
+    } catch (error) {
+      console.error('Failed to save game:', error);
+    }
+  }
+
+  async postGameProcessing() {
+    this.clearIntervals();
+    await this.saveGame();
+    await this.updateRating();
+  }
+
   whomTurnItIs() {
-    if (this._game.turn() === this.owner?.color) {
+    if (this.game.turn() === this.owner?.color) {
       return 'owner';
     } else {
       return 'opponent';
     }
   }
 
+  isPlayerConnected(playerId: string) {
+    if (this.owner?.id === playerId) {
+      return this.owner.connected;
+    } else if (this.opponent?.id === playerId) {
+      return this.opponent.connected;
+    }
+
+    return false;
+  }
+
+  setIsPlayerConnected(playerId: string, isConnected: boolean) {
+    if (this.owner?.id === playerId) {
+      this.owner.connected = isConnected;
+    } else if (this.opponent?.id === playerId) {
+      this.opponent.connected = isConnected;
+    }
+  }
+
   private startTimer() {
     this.timer.gameInterval = setInterval(() => {
-      if (this._game.game_over()) {
+      if (this.game.game_over()) {
         this.clearIntervals();
       }
+
       if (this.whomTurnItIs() === 'owner') {
         this.timer.owner -= 1;
         this.timer.owner < 0 && this.endGameDueToTimeout('opponent');
@@ -182,9 +389,9 @@ export class Game {
   }
 
   endGameDueToTimeout(winner: 'owner' | 'opponent') {
-    this.clearIntervals();
     const player = this[winner];
     this.endedByTimeout = true;
     this.winner = player!.color;
+    this.postGameProcessing();
   }
 }

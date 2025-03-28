@@ -10,33 +10,41 @@ interface Props {
 const EmailVerificationOutcome = ({ isVerified }: Props) => {
   return (
     <Container
-      style={{
+      sx={{
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         height: '100vh',
+        pt: '50px',
       }}
     >
       <Paper
         elevation={3}
-        style={{
-          padding: '20px',
+        sx={{
+          p: '30px',
           textAlign: 'center',
+          border: '1px solid',
+          borderTopColor: 'secondary.dark',
+          borderLeftColor: 'secondary.dark',
+          borderRightColor: 'primary.dark',
+          borderBottomColor: 'primary.dark',
         }}
       >
         {isVerified ? (
           <>
-            <CheckCircleIcon style={{ fontSize: 50, color: 'green' }} />
+            <CheckCircleIcon sx={{ fontSize: 50, color: 'green' }} />
             <Typography variant="h5">Email verified successfully!</Typography>
-            <Typography variant="subtitle1">
+            <Typography color="text.secondary" variant="subtitle1">
               You can now access all features.
             </Typography>
           </>
         ) : (
           <>
-            <ErrorIcon style={{ fontSize: 50, color: 'red' }} />
+            <ErrorIcon sx={{ fontSize: 50, color: 'red' }} />
             <Typography variant="h5">Email verification failed.</Typography>
-            <Typography variant="subtitle1">Please try again later.</Typography>
+            <Typography color="text.secondary" variant="subtitle1">
+              Please try again later.
+            </Typography>
           </>
         )}
       </Paper>

@@ -1,6 +1,8 @@
 import {
+  Alert,
   Button,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -8,6 +10,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -18,15 +21,37 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import { useAppSelector } from '../../features/redux/hooks';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../hooks/useSocket';
-type Props = {};
+import { useAuth } from '../../hooks/useAuth';
+import { Game } from '../../features/redux/socketDataSlice';
+import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcutAdd';
 
-const GamesList = (props: Props) => {
-  const games = useAppSelector((state) => state.socketData.gamesList);
+const GamesList = () => {
+  const { playerGames, gamesList } = useAppSelector(
+    (state) => state.socketData
+  );
   const nagivate = useNavigate();
-  const { socket } = useSocket();
+  const { socket, player } = useSocket();
+  const { authState } = useAuth();
 
-  const handleJoinGame = (gameId: string) => {
-    socket?.emit('joinGame', { gameId }, (gameId: string) => {
+  const [message, setMessage] = useState<{
+    severity: 'error' | 'info' | 'success' | 'warning';
+    msg: string;
+  } | null>(null);
+
+  const handleReconnect = (game: Game) => {
+    nagivate(`/game/${game.gameId}`);
+  };
+
+  const handleJoinGame = (game: Game) => {
+    if (authState.user === null && game.ranked === true) {
+      setMessage({
+        severity: 'info',
+        msg: 'You cannot join ranked game as a guest. Please log in',
+      });
+      return;
+    }
+
+    socket?.emit('joinGame', { gameId: game.gameId }, (gameId: string) => {
       nagivate(`/game/${gameId}`);
     });
   };
@@ -45,10 +70,11 @@ const GamesList = (props: Props) => {
         return null;
     }
   };
-  
+
   useEffect(() => {
     if (!socket) return;
-    socket?.emit('requestGamesList');
+    socket.emit('requestGamesList');
+    socket.emit('getPlayerGames');
   }, [socket]);
   return (
     <>
@@ -73,19 +99,25 @@ const GamesList = (props: Props) => {
             <TableHead>
               <TableRow>
                 <TableCell sx={tableCellSx}>Owner Name</TableCell>
-                <TableCell sx={tableCellSx}>Ranking</TableCell>
+                <TableCell sx={tableCellSx}>Rating</TableCell>
                 <TableCell sx={tableCellSx}>Type</TableCell>
-                <TableCell sx={tableCellSx}>Time + Increase</TableCell>
+                <TableCell sx={tableCellSx}>Tempo</TableCell>
+                <TableCell sx={tableCellSx}>Ranked</TableCell>
                 <TableCell sx={tableCellSx}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {games.map((game, index) => (
+              {[
+                ...playerGames,
+                ...gamesList.filter((g) => g.owner.id !== player?.id),
+              ].map((game, index) => (
                 <TableRow key={index}>
-                  <TableCell>{game.owner.username}</TableCell>
-                  <TableCell>{game.owner?.rating || '-'}</TableCell>
-                  <TableCell>
-                    <Stack>
+                  <TableCell sx={rowCellSx}>{game.owner.username}</TableCell>
+                  <TableCell sx={rowCellSx}>
+                    {game.owner?.rating || '-'}
+                  </TableCell>
+                  <TableCell sx={rowCellSx}>
+                    <Stack alignItems={'center'}>
                       {getGameTypeIcon(game.type)}
 
                       <Typography color="text.primary" variant="caption">
@@ -93,17 +125,32 @@ const GamesList = (props: Props) => {
                       </Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell>{game.tempo}</TableCell>
-                  <TableCell>
+                  <TableCell sx={rowCellSx}>{game.tempo}</TableCell>
+                  <TableCell sx={rowCellSx}>
+                    {game.ranked ? (
+                      <Tooltip title="Ranked">
+                        <SwitchAccessShortcutAddIcon />
+                      </Tooltip>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell sx={rowCellSx}>
                     <Button
                       onClick={() => {
-                        handleJoinGame(game.gameId);
+                        game.owner.id === player?.id ||
+                        game.opponent?.id === player?.id
+                          ? handleReconnect(game)
+                          : handleJoinGame(game);
                       }}
                       size="small"
                       variant="contained"
                       color="secondary"
                     >
-                      Join
+                      {game.owner.id === player?.id ||
+                      game.opponent?.id === player?.id
+                        ? 'Reconnect'
+                        : 'Join'}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -112,15 +159,33 @@ const GamesList = (props: Props) => {
           </Table>
         </TableContainer>
       </Paper>
+      <Snackbar
+        open={!!message}
+        autoHideDuration={6000}
+        onClose={() => setMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setMessage(null)}
+          severity={message?.severity}
+          sx={{ width: '100%' }}
+        >
+          {message?.msg}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
 
+const rowCellSx = {
+  textAlign: 'center',
+};
 const tableCellSx = {
   fontWeight: 'bold',
   color: 'text.secondary',
   bgcolor: 'background.paper',
   borderBottom: '1px solid',
   borderBottomColor: 'secondary.main',
+  textAlign: 'center',
 };
 export default GamesList;

@@ -47,8 +47,9 @@ export const userLoginController = async (
 
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
     });
 
     res.status(200).json({

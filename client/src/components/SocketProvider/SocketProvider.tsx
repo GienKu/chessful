@@ -1,20 +1,18 @@
 import { ReactNode, use, useEffect, useState } from 'react';
 import { SocketContext } from '../../features/contexts/SocketContext';
 import { io } from 'socket.io-client';
-import { useNavigate } from 'react-router-dom';
-import { useAppDispatch } from '../../features/redux/hooks';
-import { setGamesList } from '../../features/redux/socketDataSlice';
+import { useAppDispatch, useAppSelector } from '../../features/redux/hooks';
+import {
+  setGamesList,
+  setPlayerGames,
+} from '../../features/redux/socketDataSlice';
 import { ISocketContext } from '../../features/contexts/SocketContext';
-import { Alert, Snackbar } from '@mui/material';
+import { useSnackbar } from '../../hooks/useSnackbar';
 
 const SocketProvider = ({ children }: { children: ReactNode }) => {
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
-
-  const [message, setMessage] = useState<{
-    severity: 'error' | 'info' | 'success' | 'warning';
-    msg: string;
-  } | null>(null);
+  const gameList = useAppSelector((state) => state.socketData.gamesList);
+  const { showSnackbar } = useSnackbar();
 
   const [context, setContext] = useState<ISocketContext>({
     socket: null,
@@ -23,38 +21,45 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (context.socket) {
-      // context.socket.on('gameCreated', (data) => {
-      //   navigate(`/game/${data.gameId}`);
-      // });
-
-      // context.socket.on('gameJoined', (data) => {
-      //   navigate(`/game/${data.gameId}`);
-      // });
-
       context.socket.on('error', (data) => {
-        setMessage({ msg: data, severity: 'error' });
+        showSnackbar(data, 'error');
       });
 
       context.socket.on('gamesList', (data) => {
         dispatch(setGamesList(data));
       });
 
-      context.socket.on('newGuestId', (guestId) => {
-        localStorage.setItem('guestId', guestId);
+      context.socket.on('playerGames', (data) => {
+        dispatch(setPlayerGames(data));
       });
 
-      context.socket.on('connected', (player) => {
-        setContext({ ...context, player });
-        console.log('Connected as:', player);
+      context.socket.on('connected', ({ id, username, type }) => {
+        setContext((prev) => ({
+          socket: prev.socket,
+          player: { id, username },
+        }));
+
+        if (type === 'guest') {
+          localStorage.setItem('guestId', id);
+        }
+
+        console.log(`Connected as ${type}: `, username);
       });
 
-      return () => {
-        context.socket?.off('error');
-        context.socket?.off('gamesList');
-        context.socket?.off('newGuestId');
-        context.socket?.off('connected');
-      };
+      context.socket.on('disconnect', (reason) => {
+        console.log('disonnected, reason:', reason);
+      });
+
+      context.socket.on('connect_error', (err) => {
+        console.log(err.message); // prints the message associated with the error
+      });
     }
+    return () => {
+      context.socket?.off('error');
+      context.socket?.off('gamesList');
+      context.socket?.off('connected');
+      context.socket?.off('connect_error');
+    };
   }, [context.socket]);
 
   useEffect(() => {
@@ -62,31 +67,22 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
       auth: {
         guestId: localStorage.getItem('guestId'),
       },
+      autoConnect: false,
       withCredentials: true,
     });
-    setContext((prevContext) => ({ ...prevContext, socket }));
+
+    socket.connect();
+
+    console.log('Socket connected');
+    setContext({ player: null, socket });
     return () => {
       socket.disconnect();
+      console.log('Socket disconnected');
+      setContext({ player: null, socket: null });
     };
   }, []);
   return (
-    <SocketContext.Provider value={context}>
-      {children}
-      <Snackbar
-        open={!!message}
-        autoHideDuration={6000}
-        onClose={() => setMessage(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setMessage(null)}
-          severity="error"
-          sx={{ width: '100%' }}
-        >
-          {message?.msg}
-        </Alert>
-      </Snackbar>
-    </SocketContext.Provider>
+    <SocketContext.Provider value={context}>{children}</SocketContext.Provider>
   );
 };
 

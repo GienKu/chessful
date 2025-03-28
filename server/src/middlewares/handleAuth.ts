@@ -32,7 +32,7 @@ const PORT = process.env.PORT;
  * @throws {Error} - If an error occurs during authentication or authorization.
  */
 export const auth = (rolesWithAccess: Role[] = []) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async  (req: Request, res: Response, next: NextFunction) => {
     const authenticateCallback: AuthenticateCallback = async (
       err,
       user,
@@ -45,15 +45,17 @@ export const auth = (rolesWithAccess: Role[] = []) => {
         }
 
         if (!user) {
-          return res.status(401).send();
+          return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // check if user has required roles if rolesWithAccess is empty then all roles have access
-        const hasRole =
-          rolesWithAccess.length === 0 || rolesWithAccess.includes(user.role);
+        // // check if user has required roles if rolesWithAccess is empty then all roles have access
+        // const hasRole =
+        //   rolesWithAccess.length === 0 || rolesWithAccess.includes(user.role);
 
-        if (!hasRole || !user.isVerified) {
-          return res.status(403).send();
+        if (!user.isVerified) {
+          return res
+            .status(403)
+            .json({ message: 'Forbidden: User not verified' });
         }
 
         req.user = user;
@@ -63,12 +65,10 @@ export const auth = (rolesWithAccess: Role[] = []) => {
       }
     };
 
-    const cb = passport.authenticate(
+    return await passport.authenticate(
       'jwt-header',
       { session: false },
       authenticateCallback
-    );
-
-    await cb(req, res, next);
+    )(req, res, next);
   };
 };

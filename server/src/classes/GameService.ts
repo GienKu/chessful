@@ -1,10 +1,14 @@
-import { ShortMove } from 'chess.js';
+import { Move, ShortMove } from 'chess.js';
 import { Game, GameState } from './Game';
 import { Server, Socket } from 'socket.io';
+import { map } from 'valibot';
+import { response } from 'express';
+import { disconnect } from 'mongoose';
 
 export class GameService {
   private static instance: GameService | null = null;
   activeGames: Map<string, Game> = new Map();
+  abortGameControllers: Map<string, NodeJS.Timeout> = new Map();
   io: Server;
 
   private constructor(io: Server) {
@@ -56,7 +60,13 @@ export class GameService {
     if (!this.canCreateGame(socket)) {
       return;
     }
-    const game = new Game(tempo, ranked, type, { ...owner, rating, color });
+    const game = new Game(tempo, ranked, type, {
+      id: owner.id,
+      username: owner.username,
+      rating,
+      color,
+      connected: true,
+    });
     this.activeGames.set(game.id, game);
 
     socket.join(game.id);
@@ -98,6 +108,7 @@ export class GameService {
         username: opponent?.username,
         color,
         rating,
+        connected: true,
       });
 
       socket.join(gameId);
@@ -121,6 +132,7 @@ export class GameService {
     }
 
     const game = this.activeGames.get(gameId);
+
     if (
       game &&
       game.doesPlayerBelongToGame(player.id) &&
@@ -147,11 +159,11 @@ export class GameService {
     }
 
     const game = this.activeGames.get(gameId);
-    if (game ) {
+    if (game) {
       const moveMade = game.move(move);
 
       // after the game has started
-      if (moveMade && game._game.history().length === 1) {
+      if (moveMade && game.game.history().length === 1) {
         game.start();
         game.emittingInterval = setInterval(() => {
           this.emitTimerUpdate(gameId);
@@ -159,91 +171,114 @@ export class GameService {
       }
 
       // gameover
-      if (game.getState().gameOver || game.endedByTimeout) {
+      if (game.isGameOver()) {
+        game.handleGameEnd();
       }
 
-      response(moveMade ? true : false);
-
+      moveMade && this.emitMoveMade(gameId, moveMade);
       this.emitGameStateUpdate(gameId);
     }
   }
 
-  //   startGame(data: { gameId: string }, socket?: Socket) {
-  //     const { gameId } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //       game.start();
-  //     }
-  //   }
+  resign(data: { gameId: string }, socket: Socket) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
 
-  //   removePlayerFromTable(data: { gameId: string }, socket?: Socket) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //       game.removePlayer();
-  //     }
-  //   }
-  //   leaveGame(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //       game.removePlayer(player);
-  //     }
-  //   }
+    const { gameId } = data;
+    const game = this.activeGames.get(gameId);
+    if (game && game.doesPlayerBelongToGame(player.id)) {
+      if (game.resign(player.id)) {
+        this.emitGameStateUpdate(gameId);
+      } else {
+        this.emitError(socket, 'You cannot resign from this game');
+      }
+    }
+  }
 
-  // resignGame(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.resign(player);
-  //     }
-  // }
+  offerDraw(data: { gameId: string }, socket: Socket) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
 
-  // offerDraw(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.offerDraw(player);
-  //     }
-  // }
+    const { gameId } = data;
+    const game = this.activeGames.get(gameId);
+    if (game && !game.isGameOver() && game.doesPlayerBelongToGame(player.id)) {
+      //inform clients about pending draw request
+      game.drawOffered(player.id);
+      this.emitGameStateUpdate(gameId);
+    }
+  }
 
-  // acceptDraw(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.acceptDraw(player);
-  //     }
-  // }
+  offerDrawResponse(
+    data: { gameId: string; isAccepted: boolean },
+    socket: Socket
+  ) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
 
-  // declineDraw(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.declineDraw(player);
-  //     }
-  // }
+    const { gameId, isAccepted } = data;
+    const game = this.activeGames.get(gameId);
+    if (game && !game.isGameOver() && game.doesPlayerBelongToGame(player.id)) {
+      if (isAccepted) {
+        game.drawAccepted();
+      } else {
+        game.drawDeclined();
+      }
+      this.emitGameStateUpdate(gameId);
+    }
+  }
+
+  offerRematch(data: { gameId: string }, socket: Socket) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+
+    const { gameId } = data;
+    const game = this.activeGames.get(gameId);
+    if (game && game.isGameOver() && game.doesPlayerBelongToGame(player.id)) {
+      //inform clients about pending draw request
+      game.rematchOffered(player.id);
+      this.emitGameStateUpdate(gameId);
+    }
+  }
+
+  offerRematchResponse(
+    data: { gameId: string; isAccepted: boolean },
+    socket: Socket
+  ) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+
+    const { gameId, isAccepted } = data;
+    const game = this.activeGames.get(gameId);
+    if (game && game.isGameOver() && game.doesPlayerBelongToGame(player.id)) {
+      if (isAccepted) {
+        game.rematchAccepted();
+      } else {
+        game.rematchDeclined();
+      }
+      this.emitGameStateUpdate(gameId);
+    }
+  }
 
   // addTime(data: { gameId: string; player: Player; time: number }) {
   //     const { gameId, player, time } = data;
   //     const game = this.activeGames.get(gameId);
   //     if (game) {
   //         game.addTime(player, time);
-  //     }
-  // }
-
-  // rematchRequest(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.requestRematch(player);
-  //     }
-  // }
-
-  // rematchAccept(data: { gameId: string; player: Player }) {
-  //     const { gameId, player } = data;
-  //     const game = this.activeGames.get(gameId);
-  //     if (game) {
-  //         game.acceptRematch(player);
   //     }
   // }
 
@@ -262,15 +297,19 @@ export class GameService {
       }
 
       const game = this.activeGames.get(gameId);
+
       if (game && game.doesPlayerBelongToGame(player.id)) {
         const state = game.getState();
         //if owner left the game then remove the game
         if (player.id === state.owner?.id) {
+          game.clearIntervals();
           this.activeGames.delete(gameId);
           // inform other player about removed game
           this.emitGameRemoved(gameId);
         } else {
+          //if opponent left game then reset the game and remove player
           game.removePlayer(player.id);
+          game.reset();
         }
 
         // inform clients about that event
@@ -301,6 +340,9 @@ export class GameService {
     const game = this.activeGames.get(gameId);
     if (game && game.doesPlayerBelongToGame(player.id)) {
       socket.join(gameId);
+      console.log('clear timeout set', `${gameId}-${player.id}`);
+      clearTimeout(this.abortGameControllers.get(`${gameId}-${player.id}`));
+      game.setIsPlayerConnected(player.id, true);
       this.emitGameStateUpdate(gameId);
       response(true);
     } else {
@@ -308,7 +350,58 @@ export class GameService {
     }
   }
 
+  disconnect(socket: Socket) {
+    const player = socket.user || socket.guest;
+
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+
+    const playerGames = this.getPlayerGames(player.id, true) as Game[];
+
+    playerGames.forEach((game) => {
+      game.setIsPlayerConnected(player.id, false);
+      socket.leave(game.id);
+
+      // if user just quickly reconnect then other client wont be disturbed by information about
+      // disconnection
+      this.emitGameStateUpdate(game.id);
+
+      this.abortGameControllers.set(
+        `${game.id}-${player.id}`,
+        setTimeout(() => {
+          console.log('timeout set:', `${game.id}-${player.id}`);
+
+          if (this.activeGames.has(game.id) && game.hasStarted) {
+            game.endGameDueToDisconnection(player.id);
+            console.log(
+              'game ended due to disconection by: ' + player.username
+            );
+          }
+
+          if (player.id === game.owner?.id) {
+            this.activeGames.delete(game.id);
+            // inform other player about removed game
+            this.emitGameRemoved(game.id);
+          } else {
+            //if opponent left game then reset the game and remove player
+            game.removePlayer(player.id);
+            game.reset();
+            this.emitGameStateUpdate(game.id);
+            this.emitGameListUpdate();
+            this.abortGameControllers.delete(`${game.id}-${player.id}`);
+          }
+        }, 15000)
+      );
+    });
+  }
+
   // EMITTING EVENTS
+
+  emitMoveMade(gameId: string, move: Move) {
+    this.io.to(gameId).emit('moveMade', move);
+  }
 
   emitError(socket: Socket, message: string) {
     socket.emit('error', message);
@@ -329,6 +422,15 @@ export class GameService {
     }
   }
 
+  emitPlayerGames(socket: Socket) {
+    const user = socket.user || socket.guest;
+    if (!user) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+    socket.emit('playerGames', this.getPlayerGames(user.id));
+  }
+
   emitGameRemoved(gameId: string) {
     this.io.to(gameId).emit('gameRemoved');
   }
@@ -340,6 +442,14 @@ export class GameService {
         owner: game.timer.owner,
         opponent: game.timer.opponent,
       });
+
+      if (game.timer.owner <= 0) {
+        game.endGameDueToTimeout('opponent');
+        this.emitGameStateUpdate(gameId);
+      } else if (game.timer.opponent <= 0) {
+        game.endGameDueToTimeout('owner');
+        this.emitGameStateUpdate(gameId);
+      }
     }
   }
 
@@ -360,18 +470,35 @@ export class GameService {
           tempo: gameState.tempo,
           ranked: gameState.ranked,
           type: gameState.type,
-          owner: {
-            id: gameState.owner!.id,
-            username: gameState.owner!.username,
-            rating: gameState.owner!.rating,
-            color: gameState.owner!.color,
-          },
+          owner: gameState.owner,
+          opponent: gameState.opponent,
         };
+      });
+  }
+
+  getPlayerGames(playerId: string, verbose: boolean = false) {
+    return Array.from(this.activeGames.entries())
+      .filter(([, game]) => game.doesPlayerBelongToGame(playerId))
+      .map(([gameId, game]) => {
+        if (verbose) {
+          return game;
+        } else {
+          const gameState = game.getState();
+          return {
+            gameId: game.id,
+            tempo: gameState.tempo,
+            ranked: gameState.ranked,
+            type: gameState.type,
+            owner: gameState.owner,
+            opponent: gameState.opponent,
+          };
+        }
       });
   }
 
   canCreateGame(socket: Socket) {
     const player = socket.user || socket.guest;
+
     if (!player) {
       this.emitError(socket, 'Connection error: user or guest not present');
       return false;
@@ -381,6 +508,7 @@ export class GameService {
       this.emitError(socket, 'Too many games on server, try again later');
       return false;
     }
+
     const canCreate = !Array.from(this.activeGames.entries()).some(
       ([, game]) => {
         return game.doesPlayerBelongToGame(player.id);
@@ -417,81 +545,126 @@ export class GameService {
     return canJoin;
   }
   registerEventHandlers(socket: Socket) {
-    socket.on('createGame', (data, response) => {
-      console.log('createGame event', socket.user?.id || socket.guest?.id);
-      this.createGame(data, socket, response);
-    });
+    const listeners = {
+      createGame: (
+        data: { tempo: Tempo; color: 'w' | 'b'; ranked: boolean },
+        response: (gameId: string) => void
+      ) => {
+        console.log('createGame event by', socket.user?.id || socket.guest?.id);
+        this.createGame(data, socket, response);
+      },
 
-    socket.on('joinGame', (data, response) => {
-      console.log('joinGame event', socket.user?.id || socket.guest?.id);
-      this.joinGame(data, socket, response);
-    });
+      joinGame: (
+        data: { gameId: string },
+        response: (gameId: string) => void
+      ) => {
+        console.log('joinGame event by', socket.user?.id || socket.guest?.id);
+        this.joinGame(data, socket, response);
+      },
 
-    socket.on('makeMove', (data, response) => {
-      console.log('makeMove event', socket.user?.id || socket.guest?.id);
-      this.makeMove(data, socket, response);
-    });
-    // socket.on('startGame', (data) => {
-    //   console.log('startGame event', socket.user?.id || socket.guest?.id);
-    //   this.startGame(data, socket);
-    // });
-    // socket.on('leaveGame', (data) => {
-    //   console.log('leaveGame event', socket.user?.id || socket.guest?.id);
-    //   this.leaveGame(data, socket);
-    // });
-    // socket.on('resignGame', (data) => {
-    //   console.log('resignGame event', socket.user?.id || socket.guest?.id);
-    //   this.resignGame(data, socket);
-    // });
-    // socket.on('offerDraw', (data) => {
-    //   console.log('offerDraw event', socket.user?.id || socket.guest?.id);
-    //   this.offerDraw(data, socket);
-    // });
-    // socket.on('acceptDraw', (data) => {
-    //   console.log('acceptDraw event', socket.user?.id || socket.guest?.id);
-    //   this.acceptDraw(data, socket);
-    // });
-    // socket.on('declineDraw', (data) => {
-    //   console.log('declineDraw event', socket.user?.id || socket.guest?.id);
-    //   this.declineDraw(data, socket);
-    // });
-    // socket.on('addTime', (data) => {
-    //   console.log('addTime event', socket.user?.id || socket.guest?.id);
-    //   this.addTime(data, socket);
-    // });
-    // socket.on('rematchRequest', (data) => {
-    //   console.log('rematchRequest event', socket.user?.id || socket.guest?.id);
-    //   this.rematchRequest(data, socket);
-    // });
-    // socket.on('rematchAccept', (data) => {
-    //   console.log('rematchAccept event', socket.user?.id || socket.guest?.id);
-    //   this.rematchAccept(data, socket);
-    // });
+      makeMove: (
+        data: { gameId: string; move: ShortMove },
+        response: (wasValid: boolean) => void
+      ) => {
+        console.log('makeMove event by', socket.user?.id || socket.guest?.id);
+        this.makeMove(data, socket, response);
+      },
+      offerDraw: (data: { gameId: string; move: ShortMove }) => {
+        console.log('offerDraw event by', socket.user?.id || socket.guest?.id);
+        this.offerDraw(data, socket);
+      },
 
-    socket.on('getGameState', (data, response) => {
-      console.log('getGameState event', socket.user?.id || socket.guest?.id);
-      this.getGameState(data, socket, response);
-    });
+      offerDrawResponse: (data: { gameId: string; isAccepted: boolean }) => {
+        console.log(
+          'drawOfferResponse event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.offerDrawResponse(data, socket);
+      },
 
-    socket.on('removePlayerFromTable', (data, response) => {
-      console.log(
-        'removePlayerFromTable event',
-        socket.user?.id || socket.guest?.id
-      );
-      this.removePlayerFromTable(data, socket, response);
-    });
+      offerRematch: (data: { gameId: string; move: ShortMove }) => {
+        console.log(
+          'offerRematch event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.offerRematch(data, socket);
+      },
 
-    socket.on('requestGamesList', () => {
-      console.log(
-        'requestGamesList event',
-        socket.user?.id || socket.guest?.id
-      );
-      this.emitGameListUpdate(socket);
-    });
+      offerRematchResponse: (data: { gameId: string; isAccepted: boolean }) => {
+        console.log(
+          'drawRematchResponse event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.offerRematchResponse(data, socket);
+      },
 
-    socket.on('reconnectToGame', (data, response) => {
-      console.log('reconnectToGame event', socket.user?.id || socket.guest?.id);
-      this.reconnectToGame(data, socket, response);
-    });
+      resign: (data: { gameId: string }) => {
+        console.log('resign event by', socket.user?.id || socket.guest?.id);
+        this.resign(data, socket);
+      },
+
+      getGameState: (
+        data: { gameId: string },
+        response: (isSuccess: boolean) => void
+      ) => {
+        console.log(
+          'getGameState event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.getGameState(data, socket, response);
+      },
+
+      removePlayerFromTable: (
+        data: { gameId: string },
+        response: () => void
+      ) => {
+        console.log(
+          'removePlayerFromTable event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.removePlayerFromTable(data, socket, response);
+      },
+
+      requestGamesList: () => {
+        console.log(
+          'requestGamesList event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.emitGameListUpdate(socket);
+      },
+
+      getPlayerGames: () => {
+        console.log(
+          'getPlayerGames event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.emitPlayerGames(socket);
+      },
+
+      reconnectToGame: (
+        data: { gameId: string },
+        response: (isSuccess: boolean) => void
+      ) => {
+        console.log(
+          'reconnectToGame event by',
+          socket.user?.id || socket.guest?.id
+        );
+        this.reconnectToGame(data, socket, response);
+      },
+      disconnect: () => {
+        console.log('disconnect event by', socket.user?.id || socket.guest?.id);
+        this.disconnect(socket);
+      },
+    };
+
+    for (const [event, listener] of Object.entries(listeners)) {
+      socket.on(event, listener);
+    }
+
+    return () => {
+      for (const [event, listener] of Object.entries(listeners)) {
+        socket.off(event, listener);
+      }
+    };
   }
 }

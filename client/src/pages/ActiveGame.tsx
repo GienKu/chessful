@@ -21,7 +21,18 @@ import ActiveGamePanel from '../components/ActiveGamePanel/ActiveGamePanel';
 
 const ActiveGame = () => {
   const { player } = useSocket();
-  const { gameState, message, leaveGame, makeMove, timer } = useGameEvents();
+  const {
+    gameState,
+    message,
+    handleLeavingGame,
+    handleResign,
+    handleOfferDraw,
+    handleOfferDrawResponse,
+    handleRematchOffer,
+    handleRematchResponse,
+    makeMove,
+    timer,
+  } = useGameEvents();
   const scale = window.innerWidth < 450 ? 1 : 0.7;
   const [boardWidth, setBoardWidth] = useState<number>(
     Math.min(window.innerWidth, window.innerHeight) * scale
@@ -39,7 +50,7 @@ const ActiveGame = () => {
 
     if (gameState.check && gameState.posOfKingInCheck) {
       styles[gameState.posOfKingInCheck.square] = {
-        boxShadow: 'inset 0 0 5px 4px red',
+        boxShadow: 'inset 0 0 15px 10px rgba(255, 0, 0, 0.6)',
       };
     }
 
@@ -70,7 +81,9 @@ const ActiveGame = () => {
         (m) => m.from === sourceSquare && m.to === targetSquare
       ) ?? false;
 
-    isValidMove && makeMove(move);
+    if (isValidMove) {
+      makeMove(move);
+    }
 
     return isValidMove;
   };
@@ -82,7 +95,7 @@ const ActiveGame = () => {
         player?.id === gameState?.owner?.id
           ? gameState?.owner?.color
           : gameState?.opponent?.color;
-      return piece[0] === thisClientColor && !!gameState?.hasStarted;
+      return piece[0] === thisClientColor;
     },
     [player, gameState]
   );
@@ -111,7 +124,7 @@ const ActiveGame = () => {
       height={'100%'}
       sx={{ py: { xs: '0px', sm: '50px' } }}
     >
-      <Box width={boardWidth} height={boardWidth}>
+      <Box width={boardWidth} height={boardWidth} sx={{ userSelect: 'none' }}>
         <Chessboard
           animationDuration={
             gameState?.type === 'blitz' || gameState?.type === 'bullet'
@@ -129,7 +142,7 @@ const ActiveGame = () => {
           position={gameState?.fen}
           onPieceDrop={onPieceDrop}
           isDraggablePiece={isPieceDraggable}
-          arePiecesDraggable={!gameState?.gameOver || gameState?.hasStarted} // false // false = > false
+          arePiecesDraggable={!gameState?.gameOver && !!gameState?.opponent}
           boardWidth={boardWidth}
           customBoardStyle={{
             width: 'max-content',
@@ -144,7 +157,12 @@ const ActiveGame = () => {
         timer={timer}
         message={message}
         player={player}
-        leaveGame={leaveGame}
+        handleLeavingGame={handleLeavingGame}
+        handleResign={handleResign}
+        handleOfferDraw={handleOfferDraw}
+        handleOfferDrawResponse={handleOfferDrawResponse}
+        handleRematchOffer={handleRematchOffer}
+        handleRematchResponse={handleRematchResponse}
       />
     </Stack>
   );

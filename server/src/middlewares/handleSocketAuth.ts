@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import { Socket } from 'socket.io';
 import User from '../db/models/User';
+import { decode } from 'punycode';
 
 if (process.env.NODE_ENV !== 'production') {
   const dotenv = require('dotenv');
@@ -17,7 +18,7 @@ const parseJWTFromCookie = (cookie: string | undefined): string | null => {
   return match ? match[1] : null;
 };
 
-export const handleSocketAuth = async (
+export const handleSocketAuth = (
   socket: Socket,
   next: (err?: Error) => void
 ) => {
@@ -35,12 +36,16 @@ export const handleSocketAuth = async (
         if (err) {
           return next(new Error('Authentication error'));
         }
-        const user = await User.findOne({ _id: decoded?.sub }).exec();
-        if (!user) {
-          return next(new Error('Authentication error'));
+        try {
+          const user = await User.findOne({ _id: decoded?.sub }).exec();
+          if (!user) {
+            return next(new Error('User not found'));
+          }
+          socket.user = user ? user : undefined;
+          next();
+        } catch (error) {
+          next(new Error('Authentication error'));
         }
-        socket.user = user || undefined;
-        return next();
       });
     } else if (guestId) {
       // No token, allow as guest
@@ -48,7 +53,7 @@ export const handleSocketAuth = async (
         id: guestId,
         username: `Guest_${guestId}`,
       };
-      return next();
+      next();
     } else {
       const newGuestId = `${Math.random().toString(36).substr(2, 9)}`;
 
@@ -56,10 +61,14 @@ export const handleSocketAuth = async (
         id: newGuestId,
         username: `Guest_${newGuestId}`,
       };
-
-      socket.emit('newGuestId', newGuestId);
+      next();
     }
-    next();
+
+    console.info(
+      `[HANDLE AUTH]-Socket:${socket.id} has connected as ${
+        token ? 'user' : 'guest'
+      }`
+    );
   } catch (error: unknown) {
     next(error as Error);
   }
