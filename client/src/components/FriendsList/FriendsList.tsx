@@ -11,6 +11,7 @@ import {
   Stack,
   Box,
   Tooltip,
+  Modal,
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -19,6 +20,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import BoltIcon from '@mui/icons-material/Bolt';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import CreateGame from '../CreateGame/CreateGame';
 
 type Props = {
   scroll?: boolean;
@@ -47,6 +49,8 @@ const FriendsList = (props: Props) => {
     authState: { user },
   } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [newGameModalOpen, setNewGameModalOpen] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -275,7 +279,15 @@ const FriendsList = (props: Props) => {
 
                   <Divider orientation="vertical" flexItem />
 
-                  <Button size="small" variant="contained" color="secondary">
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => {
+                      setNewGameModalOpen(true);
+                      setSelectedFriend(friend);
+                    }}
+                  >
                     Invite
                   </Button>
                 </Stack>
@@ -285,6 +297,25 @@ const FriendsList = (props: Props) => {
           ))}
         </List>
       )}
+      <Modal
+        open={newGameModalOpen}
+        onClose={() => {
+          setNewGameModalOpen(false);
+          setSelectedFriend(null);
+        }}
+      >
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100vh"
+        >
+          <CreateGame
+            invitedPlayerId={selectedFriend?.id}
+            invitedPlayerUsername={selectedFriend?.username}
+          />
+        </Box>
+      </Modal>
     </Paper>
   );
 };

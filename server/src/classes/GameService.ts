@@ -5,9 +5,15 @@ import { map } from 'valibot';
 import { response } from 'express';
 import { disconnect } from 'mongoose';
 
+interface Player {
+  id: string;
+  username: string;
+  socketId: string;
+}
 export class GameService {
   private static instance: GameService | null = null;
   activeGames: Map<string, Game> = new Map();
+  activePlayers: Map<string, Player> = new Map();
   abortGameControllers: Map<string, NodeJS.Timeout> = new Map();
   io: Server;
 
@@ -24,11 +30,11 @@ export class GameService {
 
   private getGameType(tempo: Tempo) {
     const [time, increment] = tempo.split('+').map(Number);
-    if (time >= 30 && increment >= 5) {
+    if (time >= 30 && increment >= 0) {
       return 'classical';
-    } else if (time >= 10 && time < 30 && increment >= 2 && increment <= 15) {
+    } else if (time >= 10 && time < 30 && increment >= 0) {
       return 'rapid';
-    } else if (time >= 3 && time < 10 && increment >= 1 && increment <= 3) {
+    } else if (time >= 3 && time < 10 && increment >= 0) {
       return 'blitz';
     } else {
       return 'bullet';
@@ -42,13 +48,19 @@ export class GameService {
       tempo: Tempo;
       color: 'w' | 'b';
       ranked: boolean;
+      invitedPlayerId?: string;
     },
     socket: Socket,
     response: (gameId: string) => void
   ) {
-    const { tempo, color, ranked } = data;
-    const type = this.getGameType(tempo);
+    const { tempo, color, ranked, invitedPlayerId } = data;
 
+    if (invitedPlayerId && !this.activePlayers.has(invitedPlayerId)) {
+      this.emitError(socket, 'Player is not online');
+      return;
+    }
+
+    const type = this.getGameType(tempo);
     const owner = socket.user || socket.guest;
     const rating = socket.user?.rating[type] ?? null;
 
@@ -58,19 +70,31 @@ export class GameService {
     }
 
     if (!this.canCreateGame(socket)) {
+      this.emitError(socket, 'You cannot create game');
       return;
     }
-    const game = new Game(tempo, ranked, type, {
-      id: owner.id,
-      username: owner.username,
-      rating,
-      color,
-      connected: true,
-    });
-    this.activeGames.set(game.id, game);
+    const game = new Game(
+      tempo,
+      ranked,
+      type,
+      {
+        id: owner.id,
+        username: owner.username,
+        rating,
+        color,
+        connected: true,
+      },
+      !!invitedPlayerId
+    );
 
+    this.activeGames.set(game.id, game);
     socket.join(game.id);
-    this.emitGameListUpdate();
+
+    if (game.privateGame) {
+      this.emitInvitation(game, socket, invitedPlayerId!);
+    } else {
+      this.emitGameListUpdate();
+    }
     response(game.id);
   }
 
@@ -113,7 +137,10 @@ export class GameService {
 
       socket.join(gameId);
       this.emitGameStateUpdate(gameId);
-      this.emitGameListUpdate();
+
+      if (!game.privateGame) {
+        this.emitGameListUpdate();
+      }
       response(gameId);
     }
   }
@@ -189,6 +216,7 @@ export class GameService {
 
     const { gameId } = data;
     const game = this.activeGames.get(gameId);
+
     if (game && game.doesPlayerBelongToGame(player.id)) {
       if (game.resign(player.id)) {
         this.emitGameStateUpdate(gameId);
@@ -274,6 +302,18 @@ export class GameService {
     }
   }
 
+  invitationDeclined(
+    data: {
+      invitationSenderId: string;
+      gameId: string;
+      isAccepted: boolean;
+    },
+    socket: Socket
+  ) {
+    this.activeGames.delete(data.gameId);
+    this.io.to(data.gameId).emit('invitationDeclined');
+  }
+
   // addTime(data: { gameId: string; player: Player; time: number }) {
   //     const { gameId, player, time } = data;
   //     const game = this.activeGames.get(gameId);
@@ -299,12 +339,11 @@ export class GameService {
       const game = this.activeGames.get(gameId);
 
       if (game && game.doesPlayerBelongToGame(player.id)) {
-        const state = game.getState();
         //if owner left the game then remove the game
-        if (player.id === state.owner?.id) {
+        if (player.id === game.owner?.id || game.privateGame) {
           game.clearIntervals();
           this.activeGames.delete(gameId);
-          // inform other player about removed game
+          // inform about removed game
           this.emitGameRemoved(gameId);
         } else {
           //if opponent left game then reset the game and remove player
@@ -317,7 +356,6 @@ export class GameService {
         this.emitGameStateUpdate(gameId);
         this.emitGameListUpdate();
         response();
-        //todo check if game was ranked and has started to update ratings
       } else {
         this.emitError(socket, "Game doesn't exist");
       }
@@ -339,10 +377,12 @@ export class GameService {
 
     const game = this.activeGames.get(gameId);
     if (game && game.doesPlayerBelongToGame(player.id)) {
+      console.log('clear game abort timeout ', `${gameId}-${player.id}`);
+
       socket.join(gameId);
-      console.log('clear timeout set', `${gameId}-${player.id}`);
       clearTimeout(this.abortGameControllers.get(`${gameId}-${player.id}`));
       game.setIsPlayerConnected(player.id, true);
+      
       this.emitGameStateUpdate(gameId);
       response(true);
     } else {
@@ -364,14 +404,11 @@ export class GameService {
       game.setIsPlayerConnected(player.id, false);
       socket.leave(game.id);
 
-      // if user just quickly reconnect then other client wont be disturbed by information about
-      // disconnection
       this.emitGameStateUpdate(game.id);
 
       this.abortGameControllers.set(
         `${game.id}-${player.id}`,
         setTimeout(() => {
-          console.log('timeout set:', `${game.id}-${player.id}`);
 
           if (this.activeGames.has(game.id) && game.hasStarted) {
             game.endGameDueToDisconnection(player.id);
@@ -380,18 +417,9 @@ export class GameService {
             );
           }
 
-          if (player.id === game.owner?.id) {
-            this.activeGames.delete(game.id);
-            // inform other player about removed game
-            this.emitGameRemoved(game.id);
-          } else {
-            //if opponent left game then reset the game and remove player
-            game.removePlayer(player.id);
-            game.reset();
-            this.emitGameStateUpdate(game.id);
-            this.emitGameListUpdate();
-            this.abortGameControllers.delete(`${game.id}-${player.id}`);
-          }
+          this.emitGameStateUpdate(game.id);
+          this.emitGameRemoved(game.id);
+          this.activeGames.delete(game.id);
         }, 15000)
       );
     });
@@ -407,10 +435,32 @@ export class GameService {
     socket.emit('error', message);
   }
 
+  emitInvitation(game: Game, socket: Socket, invitedPlayerId: string) {
+    const player = this.activePlayers.get(invitedPlayerId);
+    if (!player) {
+      this.emitError(socket, 'Player is not online');
+      return;
+    }
+    if (player?.socketId) {
+      this.io.to(player.socketId).emit('invitation', {
+        gameId: game.id,
+        tempo: game.tempo,
+        type: game.type,
+        color: game.owner?.color === 'w' ? 'b' : 'w',
+        invitedBy: { id: game.owner?.id, username: game.owner?.username },
+        ranked: game.ranked,
+      });
+    }
+  }
+
   emitGameStateUpdate(gameId: string) {
     const game = this.activeGames.get(gameId);
     if (game) {
       this.io.to(gameId).emit('gameState', game.getState());
+      this.io.to(gameId).emit('timerUpdate', {
+        owner: game.timer.owner,
+        opponent: game.timer.opponent,
+      });
     }
   }
 
@@ -459,7 +509,9 @@ export class GameService {
       .filter(([, game]) => {
         const gameState = game.getState();
         return (
-          !gameState.hasStarted && !(gameState.owner && gameState.opponent)
+          !game.privateGame &&
+          !gameState.hasStarted &&
+          !(gameState.owner && gameState.opponent)
         );
       })
       .map(([gameId, game]) => {
@@ -544,6 +596,30 @@ export class GameService {
 
     return canJoin;
   }
+
+  registerPlayer(socket: Socket) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+
+    this.activePlayers.set(player.id, {
+      id: player.id,
+      username: player.username,
+      socketId: socket.id,
+    });
+  }
+
+  unregisterPlayer(socket: Socket) {
+    const player = socket.user || socket.guest;
+    if (!player) {
+      this.emitError(socket, 'Connection error: user or guest not present');
+      return;
+    }
+    this.activePlayers.delete(player.id);
+  }
+
   registerEventHandlers(socket: Socket) {
     const listeners = {
       createGame: (
@@ -562,6 +638,25 @@ export class GameService {
         this.joinGame(data, socket, response);
       },
 
+      invitationResponse: (
+        data: {
+          invitationSenderId: string;
+          gameId: string;
+          isAccepted: boolean;
+        },
+        response: (gameId: string) => void
+      ) => {
+        console.log(
+          'invitationResponse event by',
+          socket.user?.id || socket.guest?.id
+        );
+        if (!data.isAccepted) {
+          this.invitationDeclined(data, socket);
+        } else {
+          this.joinGame(data, socket, response);
+        }
+      },
+
       makeMove: (
         data: { gameId: string; move: ShortMove },
         response: (wasValid: boolean) => void
@@ -569,6 +664,7 @@ export class GameService {
         console.log('makeMove event by', socket.user?.id || socket.guest?.id);
         this.makeMove(data, socket, response);
       },
+
       offerDraw: (data: { gameId: string; move: ShortMove }) => {
         console.log('offerDraw event by', socket.user?.id || socket.guest?.id);
         this.offerDraw(data, socket);
@@ -653,9 +749,12 @@ export class GameService {
       },
       disconnect: () => {
         console.log('disconnect event by', socket.user?.id || socket.guest?.id);
+        this.unregisterPlayer(socket);
         this.disconnect(socket);
       },
     };
+
+    this.registerPlayer(socket);
 
     for (const [event, listener] of Object.entries(listeners)) {
       socket.on(event, listener);

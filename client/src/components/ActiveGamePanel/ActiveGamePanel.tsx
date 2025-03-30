@@ -372,11 +372,11 @@ const ActiveGamePanel = (props: Props) => {
           </Stack>
         </Paper>
       </Stack>
-      {!gameState?.opponent && (
+      {/* {!gameState?.opponent && (
         <Alert variant="outlined" severity="info" sx={{ mt: 2, width: '100%' }}>
           Waiting for others to connect...
         </Alert>
-      )}
+      )} */}
       {message && (
         <Alert variant="outlined" severity="info" sx={{ mt: 2, width: '100%' }}>
           {message}

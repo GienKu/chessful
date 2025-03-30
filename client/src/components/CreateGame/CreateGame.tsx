@@ -18,9 +18,12 @@ import { useSocket } from '../../hooks/useSocket';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
-type Props = {};
+type Props = {
+  invitedPlayerId?: string;
+  invitedPlayerUsername?: string;
+};
 
-const CreateGame = (props: Props) => {
+const CreateGame = ({ invitedPlayerId, invitedPlayerUsername }: Props) => {
   const [minutes, setMinutes] = useState(10);
   const [increment, setIncrement] = useState(5);
   const [color, setColor] = useState<'w' | 'b'>('w');
@@ -32,10 +35,10 @@ const CreateGame = (props: Props) => {
   const handleCreateGame = (e: FormEvent) => {
     e.preventDefault();
     const tempo = `${minutes}+${increment}`;
-    console.log('clicked')
+    console.log('clicked');
     socket?.emit(
       'createGame',
-      { tempo, color: color, ranked },
+      { tempo, color: color, ranked, invitedPlayerId },
       (gameId: string) => {
         navigate(`/game/${gameId}`);
       }
@@ -69,7 +72,9 @@ const CreateGame = (props: Props) => {
             textAlign={'center'}
             gutterBottom
           >
-            Create game
+            {invitedPlayerUsername
+              ? `Play with ${invitedPlayerUsername}`
+              : 'Create public game'}
             <Divider sx={{ mt: '5px' }}></Divider>
           </Typography>
           <Box mb={2} display="flex" flexDirection="column" alignItems="center">

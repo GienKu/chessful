@@ -22,6 +22,7 @@ export class Game {
   opponent: Player | null = null;
   ranked: boolean;
   tempo: Tempo;
+  privateGame: boolean;
   timer: Timer = {
     owner: 0,
     opponent: 0,
@@ -37,13 +38,20 @@ export class Game {
   whoResigned: 'w' | 'b' | null = null;
   rematchOfferedById: string | null = null;
 
-  constructor(tempo: Tempo, ranked: boolean, type: GameType, owner: Player) {
+  constructor(
+    tempo: Tempo,
+    ranked: boolean,
+    type: GameType,
+    owner: Player,
+    privateGame: boolean = false
+  ) {
     this.game = new Chess();
     this.owner = owner;
     this.tempo = tempo;
     this.setTimer(tempo);
     this.type = type;
     this.ranked = ranked;
+    this.privateGame = privateGame;
     this.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 

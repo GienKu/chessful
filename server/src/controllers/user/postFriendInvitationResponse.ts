@@ -16,7 +16,6 @@ export const postFriendInvitationResponse = async (
       throw new Error('User not attached to request');
     }
 
-    console.log('post invi hit');
     const { id: invitationId, isAccepted } = vParse(
       FriendInvitationResponseSchema,
       req.body

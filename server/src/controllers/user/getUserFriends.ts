@@ -28,7 +28,6 @@ export const getUserFriends = async (
     const userFriends = await Promise.all(
       friends.map(async (id) => {
         const friend = await User.findOne({ _id: id }).exec();
-        console.log('friend', friend);
         if (!friend) return;
         return {
           id: friend.id,

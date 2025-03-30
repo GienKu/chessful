@@ -26,12 +26,24 @@ export function useGameEvents() {
     let timeoutId: undefined | number = undefined;
     // LISTENING EVENTS
     socket.on('gameState', (data) => {
-      console.log(data);
+      if (!data.opponent) {
+        setMessage('Waiting for others to connect...');
+      } else {
+        setMessage(null);
+      }
+
       setGameState(data);
     });
 
     socket.on('gameRemoved', (data) => {
       setMessage('Game has been removed redirecting in 5 sec...');
+      timeoutId = setTimeout(() => {
+        navigate('/');
+      }, 5000);
+    });
+
+    socket.on('invitationDeclined', () => {
+      setMessage('Game invitation declined, redirecting in 5 sec..');
       timeoutId = setTimeout(() => {
         navigate('/');
       }, 5000);
