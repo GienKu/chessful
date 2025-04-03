@@ -66,7 +66,6 @@ const FriendsList = (props: Props) => {
 
         if (res.ok) {
           const { data, message } = await res.json();
-          console.log(data, message);
           setFriends(data.userFriends);
         } else {
           console.error('Failed to fetchh Friends:', res.statusText);
@@ -120,6 +119,7 @@ const FriendsList = (props: Props) => {
             borderRadius="8px"
             padding="20px"
             textAlign="center"
+            width={'100%'}
           >
             <Typography variant="h6" color="primary" fontWeight="bold">
               Welcome to Chessful!
@@ -133,7 +133,7 @@ const FriendsList = (props: Props) => {
         <List
           sx={{
             ...(props.scroll && {
-              overflowY: 'scroll',
+              overflowY: 'auto',
               maxHeight: '500px',
               '&::-webkit-scrollbar': {
                 width: '8px',
@@ -305,10 +305,13 @@ const FriendsList = (props: Props) => {
         }}
       >
         <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          height="100vh"
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '320px',
+          }}
         >
           <CreateGame
             invitedPlayerId={selectedFriend?.id}

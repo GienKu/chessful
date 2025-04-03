@@ -37,6 +37,10 @@ const NavigationDrawer = ({ open, setOpen }: Props) => {
                 cursor: 'pointer',
                 ':hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
               }}
+              onClick={() => {
+                navigate('/');
+                setOpen(false);
+              }}
             >
               <ListItemIcon>
                 <SportsEsportsIcon color="secondary" />

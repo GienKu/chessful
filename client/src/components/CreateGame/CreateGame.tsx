@@ -55,7 +55,7 @@ const CreateGame = ({ invitedPlayerId, invitedPlayerUsername }: Props) => {
       sx={{
         p: '15px',
         maxWidth: '320px',
-        width: '50%',
+        width: '100%',
         border: '1px solid',
         borderTopColor: 'secondary.dark',
         borderLeftColor: 'secondary.dark',

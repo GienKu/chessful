@@ -13,8 +13,8 @@ const Home = () => {
         sx={{ background: 'linear-gradient(to bottom, black, #121212)' }}
         direction={'row'}
         alignItems={'center'}
-        justifyContent={'space-around'}
-        gap={3}
+        justifyContent={'center'}
+        gap={'50px'}
       >
         <CreateGame />
         <Box

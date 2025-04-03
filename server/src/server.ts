@@ -7,6 +7,7 @@ import { errorHandler } from './middlewares/handleErrors';
 import { passportConfig } from './config/passport/passport';
 import { Server } from 'socket.io';
 import useWebSockets from './ws';
+import { gameRoutes } from './routes/gameRoutes';
 
 if (process.env.NODE_ENV !== 'production') {
   const dotenv = require('dotenv');
@@ -23,13 +24,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: [CLIENT_BASE_URL!, 'http://192.168.1.71:5173'],
     credentials: true,
   })
 );
 
 passportConfig(app);
 app.use(userRoutes);
+app.use(gameRoutes);
 app.use(errorHandler);
 
 server.listen(port, () => {

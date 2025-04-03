@@ -1,4 +1,3 @@
-// @deno-types="@types/express"
 import express from 'express';
 import { userLoginController } from '../controllers/user/auth/userLogin';
 import { sendPasswordResetLink } from '../controllers/user/auth/sendPasswordResetLink';

@@ -16,7 +16,7 @@ const useWebSockets = (app: Application) => {
   const server = createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: CLIENT_BASE_URL,
+      origin: [CLIENT_BASE_URL!,'http://192.168.1.71:5173'],
       credentials: true,
     },
   });

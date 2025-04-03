@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Paper,
   List,
@@ -13,49 +13,14 @@ import {
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
-import BoltIcon from '@mui/icons-material/Bolt'; 
+import BoltIcon from '@mui/icons-material/Bolt';
 
 import board from '../../assets/chess-board.svg';
+import { FinishedGame } from '../../types/types';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 type Props = {};
-
-const pastGamesData = [
-  {
-    id: 1,
-    player1: 'Alice (1500)',
-    player2: 'Bob (1450)',
-    winner: 'Alice',
-    type: 'blitz',
-  },
-  {
-    id: 2,
-    player1: 'Charlie (1600)',
-    player2: 'Dave (1550)',
-    winner: 'Dave',
-    type: 'classical',
-  },
-  {
-    id: 3,
-    player1: 'Eve (1700)',
-    player2: 'Frank (1650)',
-    winner: 'Eve',
-    type: 'rapid',
-  },
-  {
-    id: 4,
-    player1: 'Grace (1800)',
-    player2: 'Heidi (1750)',
-    winner: 'Grace',
-    type: 'bullet',
-  },
-  {
-    id: 5,
-    player1: 'Ivan (1900)',
-    player2: 'Judy (1850)',
-    winner: 'Ivan',
-    type: 'blitz',
-  },
-];
 
 const getGameTypeIcon = (type: string) => {
   switch (type) {
@@ -73,6 +38,39 @@ const getGameTypeIcon = (type: string) => {
 };
 
 const PastGames = (props: Props) => {
+  const {
+    authState: { user },
+  } = useAuth();
+  const [games, setGames] = useState<FinishedGame[]>([]);
+  const navigate = useNavigate();
+
+  const handleAnalyzeButtonClick = (gameId: string) => {
+    navigate(`/analyze-game/${gameId}`);
+  };
+
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_BASE_URL}/api/get-games`,
+          {
+            method: 'GET',
+            credentials: 'include',
+          }
+        );
+        if (!res.ok) {
+          console.error(res.statusText);
+        }
+        const { data } = await res.json();
+        console.log(data.games);
+        setGames(data.games);
+      } catch (error) {
+        console.error('Error fetching games:', error);
+      }
+    };
+
+    fetchGames();
+  }, [user]);
   return (
     <Paper
       elevation={10}
@@ -98,61 +96,112 @@ const PastGames = (props: Props) => {
           Past Games
         </Typography>
       </Box>
-      <List>
-        {pastGamesData.slice(0, 5).map((game) => (
-          <ListItem
-            key={game.id}
-            sx={{
-              '&:hover': {
-                backgroundColor: 'action.hover',
-              },
-            }}
+      {user === null ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100%"
+          padding="20px"
+        >
+          <Box
+            border="1px solid"
+            borderColor="secondary.main"
+            borderRadius="8px"
+            padding="20px"
+            textAlign="center"
+            width={'100%'}
           >
-            <Stack
-              direction="row"
-              justifyContent={'space-between'}
-              alignItems={'center'}
-              gap={'10px'}
-              width={'100%'}
+            <Typography variant="h6" color="secondary" fontWeight="bold">
+              Welcome to Chessful!
+            </Typography>
+            <Typography variant="body1" color="text.secondary" mt={1}>
+              Log in to view your games.
+            </Typography>
+          </Box>
+        </Box>
+      ) : (
+        <List
+          sx={{
+            overflowY: 'auto',
+            maxHeight: '500px',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'primary.main',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'background.default',
+            },
+          }}
+        >
+          {games.map((game) => (
+            <ListItem
+              key={game.id}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
             >
-              <img src={board} alt="Chess board" width={40} height={40} />
+              <Stack
+                direction="row"
+                justifyContent={'space-between'}
+                alignItems={'center'}
+                gap={'10px'}
+                width={'100%'}
+              >
+                <img src={board} alt="Chess board" width={40} height={40} />
 
-              <Stack alignItems="center">
-                {getGameTypeIcon(game.type)}
+                <Stack alignItems="center">
+                  {getGameTypeIcon(game.gameType)}
 
-                <Typography color="text.secondary" variant="caption">
-                  {game.type}
-                </Typography>
+                  <Typography color="text.secondary" variant="caption">
+                    {game.gameType}
+                  </Typography>
+                </Stack>
+                <Stack>
+                  <Typography variant="body2">
+                    {game.winner === 'w' ? (
+                      <strong>
+                        {game.whitePlayer} ({game.whiteRating ?? 'N/A'})
+                      </strong>
+                    ) : (
+                      `${game.whitePlayer} (${game.whiteRating ?? 'N/A'})`
+                    )}
+                  </Typography>
+                  <Typography variant="body2">
+                    {game.winner === 'b' ? (
+                      <strong>
+                        {game.blackPlayer} ({game.blackRating ?? 'N/A'})
+                      </strong>
+                    ) : (
+                      `${game.blackPlayer} (${game.blackRating ?? 'N/A'})`
+                    )}
+                  </Typography>
+                </Stack>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleAnalyzeButtonClick(game.id)}
+                >
+                  Analyze
+                </Button>
               </Stack>
-              <Stack>
-                <Typography variant="body2">
-                  {game.winner === game.player1.split(' ')[0] ? (
-                    <strong>{game.player1}</strong>
-                  ) : (
-                    game.player1
-                  )}
-                </Typography>
-                <Typography variant="body2">
-                  {game.winner === game.player2.split(' ')[0] ? (
-                    <strong>{game.player2}</strong>
-                  ) : (
-                    game.player2
-                  )}
-                </Typography>
-              </Stack>
-              <Button variant="outlined" size="small">
-                Analyze
-              </Button>
-            </Stack>
-          </ListItem>
-        ))}
-        {/* <Divider /> */}
-        <ListItem sx={{ justifyContent: 'center' }}>
-          <Button  variant="text" size='small' color="primary">
-            More
-          </Button>
-        </ListItem>
-      </List>
+            </ListItem>
+          ))}
+          {/* <ListItem sx={{ justifyContent: 'center' }}>
+            <Button variant="text" size="small" color="primary">
+              More
+            </Button>
+          </ListItem> */}
+        </List>
+      )}
     </Paper>
   );
 };

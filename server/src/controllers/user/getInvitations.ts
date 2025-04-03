@@ -17,6 +17,7 @@ export const getInvitations = async (
 
     const invitations = await FriendInvitation.find({
       receiver: req.user.id,
+      status: 'pending',
     })
       .populate('sender', 'username') // Fetch only the 'username' field of the sender
       .exec();

@@ -32,7 +32,7 @@ const PORT = process.env.PORT;
  * @throws {Error} - If an error occurs during authentication or authorization.
  */
 export const auth = (rolesWithAccess: Role[] = []) => {
-  return async  (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const authenticateCallback: AuthenticateCallback = async (
       err,
       user,
@@ -45,6 +45,7 @@ export const auth = (rolesWithAccess: Role[] = []) => {
         }
 
         if (!user) {
+          console.log(user);
           return res.status(401).json({ message: 'Unauthorized' });
         }
 

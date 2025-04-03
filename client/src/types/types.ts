@@ -60,5 +60,19 @@ export interface GameState {
   rematchOfferedById: string | null;
 }
 
+export interface FinishedGame {
+  id: string;
+  whitePlayer: string;
+  blackPlayer: string;
+  whiteRating: number | null;
+  blackRating: number | null;
+  pgn: string;
+  winner: 'w' | 'b' | 'd' | null;
+  gameType: GameType;
+  tempo: string;
+  ranked: boolean;
+  endedBy: string;
+}
+
 export type Promotion = Exclude<PieceType, 'p' | 'k'>;
 export type GameType = 'bullet' | 'blitz' | 'rapid' | 'classical';

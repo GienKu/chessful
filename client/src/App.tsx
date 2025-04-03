@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import Friends from './pages/Friends';
 import Profile from './pages/Profile';
 import SnackbarProvider from './components/SnackbarProvider/SnackbarProvider';
+import AnalyzeGame from './pages/AnalyzeGame';
 // import ProtectedRoutes from './components/ProtectedRoutes/ProtectedRoutes';
 // import Unauthorized from './pages/Unauthorized';
 // import ResetPassword from './pages/ResetPassword';
@@ -53,6 +54,10 @@ function App() {
                   element={<EmailVerificationOutcome isVerified={false} />}
                 ></Route>
                 <Route path="game/:gameId" element={<ActiveGame />}></Route>
+                <Route
+                  path="analyze-game/:gameId"
+                  element={<AnalyzeGame />}
+                ></Route>
                 <Route path="player/:id" element={<Profile />}></Route>
                 <Route path="friends" element={<Friends />}></Route>
                 <Route
