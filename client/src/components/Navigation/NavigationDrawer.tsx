@@ -57,7 +57,7 @@ const NavigationDrawer = ({ open, setOpen }: Props) => {
               <ListItemIcon>
                 <ManageSearchIcon color="primary" />
               </ListItemIcon>
-              <ListItemText primary={'Analyze games'} />
+              <ListItemText primary={'Profile'} />
             </ListItem>
 
             <ListItem

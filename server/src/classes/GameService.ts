@@ -382,7 +382,7 @@ export class GameService {
       socket.join(gameId);
       clearTimeout(this.abortGameControllers.get(`${gameId}-${player.id}`));
       game.setIsPlayerConnected(player.id, true);
-      
+
       this.emitGameStateUpdate(gameId);
       response(true);
     } else {
@@ -409,7 +409,6 @@ export class GameService {
       this.abortGameControllers.set(
         `${game.id}-${player.id}`,
         setTimeout(() => {
-
           if (this.activeGames.has(game.id) && game.hasStarted) {
             game.endGameDueToDisconnection(player.id);
             console.log(
@@ -478,7 +477,12 @@ export class GameService {
       this.emitError(socket, 'Connection error: user or guest not present');
       return;
     }
-    socket.emit('playerGames', this.getPlayerGames(user.id));
+    const games = this.getPlayerGames(user.id);
+    console.log(games);
+    if (games.length > 0) {
+      socket.emit('playerGames', games);
+      return;
+    }
   }
 
   emitGameRemoved(gameId: string) {

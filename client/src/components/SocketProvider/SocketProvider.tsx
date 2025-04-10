@@ -67,7 +67,10 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         dispatch(setGamesList(data));
       });
 
-      context.socket.on('playerGames', (data: Invitation) => {});
+      context.socket.on('playerGames', (data) => {
+        console.log('playerGames', data);
+        dispatch(setPlayerGames(data));
+      });
 
       context.socket.on('invitation', (data) => {
         setInvitation(data);
