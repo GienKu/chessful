@@ -7,6 +7,7 @@ import { generateJwtToken } from '../../../utils/generateJwtToken';
 import { AppError } from '../../../errors/AppError';
 import User from '../../../db/models/User';
 import { UserLoginResponse } from '../../../../../interfaces/ApiResponses';
+import ms from 'ms';
 /**
  * Controller for handling user login requests.
  *
@@ -39,17 +40,22 @@ export const userLoginController = async (
     }
 
     // create access token
+    const exp = '2h';
+    const maxAge = ms(exp);
+
     const token = generateJwtToken({
       id: user.id,
       role: user.role,
       tokenType: 'user-requests',
+      exp,
     });
 
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
+      maxAge,
     });
 
     res.status(200).json({

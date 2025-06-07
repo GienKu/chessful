@@ -80,21 +80,31 @@ const GamesList = () => {
     <>
       <Typography
         textAlign={'center'}
-        variant="h2"
+        variant="h3"
         color="text.primary"
         gutterBottom
+        pt={'50px'}
       >
         Active games
       </Typography>
       <Paper
         sx={{
-          width: '95%',
-          minHeight: '300px',
-          maxHeight: '500px',
+          maxWidth: { xs: '300px', sm: '100%' },
+          width:'100%',
+          minHeight: '400px',
+          maxHeight: '700px',
           overflow: 'auto',
         }}
       >
-        <TableContainer>
+        <TableContainer
+          sx={{
+            height: '100%',
+            maxWidth: { xs: '300px', sm: '100%' },
+            minHeight: '400px',
+            maxHeight: '700px',
+            overflow: 'auto',
+          }}
+        >
           <Table>
             <TableHead>
               <TableRow>

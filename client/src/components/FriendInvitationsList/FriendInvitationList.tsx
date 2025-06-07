@@ -97,7 +97,7 @@ const FriendInvitationList = (props: Props) => {
       sx={{
         borderColor: 'primary.main',
         borderRadius: '10px',
-        width: '50%',
+        width: '100%',
         maxWidth: '400px',
         minHeight: '400px',
       }}

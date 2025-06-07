@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../../errors/AppError';
 import Game from '../../db/models/Game';
 import User from '../../db/models/User';
-
+import { parse as vParse } from 'valibot';
+import { ObjectIdSchema } from '../../validation-schemas/validationSchemas';
 // this controller is responsible for getting a player's information for needed profile page
 // and it can be used to get any player's information for different purposes
 export const getGames = async (
@@ -11,11 +12,15 @@ export const getGames = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.user) {
-      throw new Error('User not attached to request');
+    const id = vParse(ObjectIdSchema, req.params.id);
+
+    const user = await User.findOne({ _id: id }).exec();
+
+    if (!user) {
+      throw new AppError('User not found');
     }
 
-    const games = await Game.find({ _id: { $in: req.user.gamesPlayed } })
+    const games = await Game.find({ _id: { $in: user.gamesPlayed } })
       .sort({ createdAt: -1 })
       .populate('whitePlayer', 'username')
       .populate('blackPlayer', 'username')

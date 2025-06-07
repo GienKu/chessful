@@ -83,8 +83,8 @@ const FriendsList = (props: Props) => {
       sx={{
         borderColor: 'primary.main',
         borderRadius: '10px',
-        width: '50%',
         maxWidth: '400px',
+        width: '100%',
         minHeight: '400px',
       }}
     >
@@ -177,7 +177,7 @@ const FriendsList = (props: Props) => {
                         textDecoration: 'underline',
                       },
                     }}
-                    onClick={() => navigate(`/player/${index}`)}
+                    onClick={() => navigate(`/player/${friend.id}`)}
                   >
                     <ListItemIcon sx={{ justifyContent: 'center' }}>
                       <PersonIcon

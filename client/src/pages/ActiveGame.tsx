@@ -33,7 +33,7 @@ const ActiveGame = () => {
     makeMove,
     timer,
   } = useGameEvents();
-  const scale = window.innerWidth < 450 ? 1 : 0.7;
+  const scale = window.innerWidth < 450 ? 0.9 : 0.7;
   const [boardWidth, setBoardWidth] = useState<number>(
     Math.min(window.innerWidth, window.innerHeight) * scale
   );
@@ -102,7 +102,7 @@ const ActiveGame = () => {
 
   useEffect(() => {
     const updateBoardWidth = () => {
-      const scale = window.innerWidth < 450 ? 1 : 0.7;
+      const scale = window.innerWidth < 450 ? 0.9 : 0.7;
       setBoardWidth(Math.min(window.innerWidth, window.innerHeight) * scale);
     };
 
@@ -116,15 +116,18 @@ const ActiveGame = () => {
 
   return (
     <Stack
+    mt={'10px'}
       justifyContent={'center'}
       alignItems={'center'}
-      direction={'row'}
-      flexWrap={'wrap'}
+      direction={{ md: 'column', lg: 'row' }}
       gap={'20px'}
       height={'100%'}
       sx={{ py: { xs: '0px', sm: '50px' } }}
     >
-      <Box width={boardWidth} height={boardWidth} sx={{ userSelect: 'none' }}>
+      <Box
+        style={{ width: boardWidth, height: boardWidth }}
+        sx={{ userSelect: 'none' }}
+      >
         <Chessboard
           animationDuration={
             gameState?.type === 'blitz' || gameState?.type === 'bullet'

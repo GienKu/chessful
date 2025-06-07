@@ -35,7 +35,6 @@ const CreateGame = ({ invitedPlayerId, invitedPlayerUsername }: Props) => {
   const handleCreateGame = (e: FormEvent) => {
     e.preventDefault();
     const tempo = `${minutes}+${increment}`;
-    console.log('clicked');
     socket?.emit(
       'createGame',
       { tempo, color: color, ranked, invitedPlayerId },

@@ -67,6 +67,8 @@ export function useGameEvents() {
       socket.off('gameState');
       socket.off('gameRemoved');
       socket.off('timerUpdate');
+      socket.off('invitationDeclined');
+      socket.off('moveMade');
       timeoutId && clearTimeout(timeoutId);
     };
   }, [socket]);
@@ -77,7 +79,7 @@ export function useGameEvents() {
     const fetchGameState = () => {
       socket.emit('getGameState', { gameId }, (isSuccess: boolean) => {
         if (isSuccess) {
-          console.log('here');
+          console.log('connected');
         } else {
           socket.emit('reconnectToGame', { gameId }, (isSuccess: boolean) => {
             if (isSuccess) {
@@ -90,7 +92,7 @@ export function useGameEvents() {
       });
     };
 
-    const tm = setTimeout(() => fetchGameState(), 300);
+    const tm = setTimeout(() => fetchGameState(), 500);
     return () => clearTimeout(tm);
   }, [socket, navigate, gameId]);
 
@@ -104,7 +106,6 @@ export function useGameEvents() {
   };
 
   const handleLeavingGame = () => {
-    console.log('leaving game');
     if (gameState) {
       socket?.emit(
         'removePlayerFromTable',

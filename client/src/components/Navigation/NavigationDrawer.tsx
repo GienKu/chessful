@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { use } from 'react';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -10,6 +10,7 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
 type Props = {
   open: boolean;
@@ -18,6 +19,7 @@ type Props = {
 
 const NavigationDrawer = ({ open, setOpen }: Props) => {
   const navigate = useNavigate();
+  const { authState } = useAuth();
   return (
     <>
       <Drawer
@@ -49,9 +51,14 @@ const NavigationDrawer = ({ open, setOpen }: Props) => {
             </ListItem>
 
             <ListItem
+              component="div"
               sx={{
-                cursor: 'pointer',
-                ':hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+                cursor: authState.user ? 'pointer' : 'default',
+                ':hover': authState.user
+                  ? { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                  : undefined,
+                opacity: authState.user ? 1 : 0.5,
+                pointerEvents: authState.user ? 'auto' : 'none',
               }}
             >
               <ListItemIcon>
@@ -61,13 +68,20 @@ const NavigationDrawer = ({ open, setOpen }: Props) => {
             </ListItem>
 
             <ListItem
+              component="div"
               sx={{
-                cursor: 'pointer',
-                ':hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+                cursor: authState.user ? 'pointer' : 'default',
+                ':hover': authState.user
+                  ? { backgroundColor: 'rgba(0, 0, 0, 0.04)' }
+                  : undefined,
+                opacity: authState.user ? 1 : 0.5,
+                pointerEvents: authState.user ? 'auto' : 'none',
               }}
               onClick={() => {
-                navigate('/friends');
-                setOpen(false);
+                if (authState.user) {
+                  navigate('/friends');
+                  setOpen(false);
+                }
               }}
             >
               <ListItemIcon>

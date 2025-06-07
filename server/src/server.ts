@@ -5,7 +5,6 @@ import './config/db-connection';
 import { userRoutes } from './routes/userRoutes';
 import { errorHandler } from './middlewares/handleErrors';
 import { passportConfig } from './config/passport/passport';
-import { Server } from 'socket.io';
 import useWebSockets from './ws';
 import { gameRoutes } from './routes/gameRoutes';
 import { serveStaticFiles } from './routes/default';
@@ -33,7 +32,9 @@ app.use(
 passportConfig(app);
 app.use(userRoutes);
 app.use(gameRoutes);
-serveStaticFiles(app);
+if (process.env.NODE_ENV === 'production') {
+  serveStaticFiles(app);
+}
 app.use(errorHandler);
 
 server.listen(port, () => {

@@ -12,11 +12,7 @@ export const getPlayer = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.user) {
-      throw new Error('User not attached to request');
-    }
-
-    const id = vParse(ObjectIdSchema, req.query.id);
+    const id = vParse(ObjectIdSchema, req.params.id);
 
     const user = await User.findOne({ _id: id }).exec();
 
@@ -25,7 +21,7 @@ export const getPlayer = async (
     }
 
     res.status(200).json({
-      message: 'Login successful',
+      message: 'Player information retrieved successfully',
       data: {
         user: {
           id: user.id,

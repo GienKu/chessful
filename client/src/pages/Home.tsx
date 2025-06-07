@@ -11,7 +11,7 @@ const Home = () => {
     <Box sx={{ m: 0, height: '100%' }}>
       <Stack
         sx={{ background: 'linear-gradient(to bottom, black, #121212)' }}
-        direction={'row'}
+        direction={{ xs: 'column-reverse', sm: 'row' }}
         alignItems={'center'}
         justifyContent={'center'}
         gap={'50px'}
@@ -20,7 +20,7 @@ const Home = () => {
         <Box
           mt={4}
           sx={{
-            width: '50%',
+            width: { xs: '100%', sm: '50%' },
             animation: 'scale 3s ease-in-out infinite',
 
             '@keyframes scale': {
@@ -44,8 +44,9 @@ const Home = () => {
       >
         <GamesList />
         <Stack
-          direction={'row'}
-          justifyContent={'space-around'}
+          direction={{ xs: 'column', sm: 'row' }}
+          justifyContent={{ xs: 'center', sm: 'space-around' }}
+          alignItems={'center'}
           paddingY={'50px'}
           gap={2}
           sx={{ width: '100%' }}

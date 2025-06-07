@@ -5,5 +5,5 @@ import { getGames } from '../controllers/game/getGames';
 
 export const gameRoutes = express.Router();
 
-gameRoutes.get('/api/get-game', auth(), getGame);
-gameRoutes.get('/api/get-games', auth(), getGames);
+gameRoutes.get('/api/get-game', getGame);
+gameRoutes.get('/api/get-games/:id', getGames);

@@ -38,7 +38,7 @@ userRoutes.get(
 
 userRoutes.patch('/api/update-password', auth(), updateUserPassword);
 
-userRoutes.get('/api/player', auth(), getPlayer);
+userRoutes.get('/api/player/:id', getPlayer);
 userRoutes.get('/api/players', auth(), getPlayersQuery);
 userRoutes.get('/api/user', auth(), getUser);
 userRoutes.get('/api/friends', auth(), getUserFriends);

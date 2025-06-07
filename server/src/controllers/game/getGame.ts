@@ -12,10 +12,6 @@ export const getGame = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.user) {
-      throw new Error('User not attached to request');
-    }
-
     const gameId = vParse(ObjectIdSchema, req.query.id);
 
     const game = await Game.findOne({ _id: gameId })

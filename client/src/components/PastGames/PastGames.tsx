@@ -47,18 +47,20 @@ const PastGames = () => {
   useEffect(() => {
     const fetchGames = async () => {
       try {
+        if (!user) {
+          setGames([]);
+          return;
+        }
         const res = await fetch(
-          `${import.meta.env.VITE_BASE_URL}/api/get-games`,
+          `${import.meta.env.VITE_BASE_URL}/api/get-games/${user.id}`,
           {
             method: 'GET',
-            credentials: 'include',
           }
         );
         if (!res.ok) {
           console.error(res.statusText);
         }
         const { data } = await res.json();
-        console.log(data.games);
         setGames(data.games);
       } catch (error) {
         console.error('Error fetching games:', error);
@@ -73,7 +75,7 @@ const PastGames = () => {
       sx={{
         borderColor: 'primary.main',
         borderRadius: '10px',
-        width: '50%',
+        width: '100%',
         maxWidth: '400px',
         minHeight: '400px',
       }}
@@ -165,19 +167,33 @@ const PastGames = () => {
                   <Typography variant="body2">
                     {game.winner === 'w' ? (
                       <strong>
-                        {game.whitePlayer} ({game.whiteRating ?? 'N/A'})
+                        {game.whitePlayer.length > 10
+                          ? `${game.whitePlayer.slice(0, 10)}...`
+                          : game.whitePlayer}{' '}
+                        ({game.whiteRating ?? 'N/A'})
                       </strong>
                     ) : (
-                      `${game.whitePlayer} (${game.whiteRating ?? 'N/A'})`
+                      `${
+                        game.whitePlayer.length > 10
+                          ? `${game.whitePlayer.slice(0, 10)}...`
+                          : game.whitePlayer
+                      } (${game.whiteRating ?? 'N/A'})`
                     )}
                   </Typography>
                   <Typography variant="body2">
                     {game.winner === 'b' ? (
                       <strong>
-                        {game.blackPlayer} ({game.blackRating ?? 'N/A'})
+                        {game.blackPlayer.length > 10
+                          ? `${game.blackPlayer.slice(0, 10)}...`
+                          : game.blackPlayer}{' '}
+                        ({game.blackRating ?? 'N/A'})
                       </strong>
                     ) : (
-                      `${game.blackPlayer} (${game.blackRating ?? 'N/A'})`
+                      `${
+                        game.blackPlayer.length > 10
+                          ? `${game.blackPlayer.slice(0, 10)}...`
+                          : game.blackPlayer
+                      } (${game.blackRating ?? 'N/A'})`
                     )}
                   </Typography>
                 </Stack>

@@ -77,9 +77,15 @@ const Header: React.FC = () => {
                 >
                   Logout
                 </Button>
-                <Stack direction={'row'} alignItems={'center'}>
-                  <Typography variant="body1" color="inherit">
-                    {authState.user.username}
+                <Stack
+                  // display={{ xs: 'none', sm: 'flex' }}
+                  direction={'row'}
+                  alignItems={'center'}
+                >
+                  <Typography variant="body1" color="inherit" noWrap>
+                    {authState.user.username.length > 10
+                      ? `${authState.user.username.slice(0, 10)}...`
+                      : authState.user.username}
                   </Typography>
                   <IconButton color="inherit">
                     <AccountCircleIcon />

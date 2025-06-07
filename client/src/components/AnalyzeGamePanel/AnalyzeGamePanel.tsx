@@ -184,7 +184,9 @@ const ActiveGamePanel = ({
             >
               <Stack>
                 <Typography variant="h6" color="text.primary">
-                  {gameInfo?.blackPlayer}
+                  {gameInfo?.blackPlayer && gameInfo.blackPlayer.length > 10
+                    ? `${gameInfo?.blackPlayer.substring(0, 10)}...`
+                    : gameInfo?.blackPlayer}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -278,7 +280,9 @@ const ActiveGamePanel = ({
             >
               <Stack>
                 <Typography variant="h6" color="text.primary">
-                  {gameInfo?.whitePlayer}
+                  {gameInfo?.whitePlayer && gameInfo.whitePlayer.length > 10
+                    ? `${gameInfo?.whitePlayer.substring(0, 10)}...`
+                    : gameInfo?.whitePlayer}
                 </Typography>
                 <Typography
                   variant="caption"

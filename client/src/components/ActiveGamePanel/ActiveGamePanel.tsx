@@ -215,7 +215,9 @@ const ActiveGamePanel = (props: Props) => {
             >
               <Stack>
                 <Typography variant="h6" color="text.primary">
-                  {gameState?.opponent?.username ?? 'Opponent'}
+                  {(gameState?.opponent?.username ?? 'Opponent').length > 10
+                    ? `${gameState?.opponent?.username.slice(0, 10)}...`
+                    : gameState?.opponent?.username ?? 'Opponent'}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -349,7 +351,9 @@ const ActiveGamePanel = (props: Props) => {
             >
               <Stack>
                 <Typography variant="h6" color="text.primary">
-                  {gameState?.owner.username}
+                  {(gameState?.owner.username ?? 'Owner').length > 10
+                    ? `${gameState?.owner.username.slice(0, 10)}...`
+                    : gameState?.owner.username}
                 </Typography>
                 <Typography
                   variant="caption"

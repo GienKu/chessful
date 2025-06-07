@@ -36,6 +36,8 @@ export const generateJwtToken = ({ id, role, tokenType, exp }: JwtClaims) => {
   const expiresIn = exp ?? '1h';
   const now = Date.now();
   const iat = Math.floor(now / 1000);
+  const expInSeconds = Math.floor(ms(expiresIn) / 1000);
+  const expTimestamp = iat + expInSeconds;
 
   const jwtPayload: CustomJwtPayload = {
     sub: id,
