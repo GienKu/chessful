@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "setup": "npm --prefix ./client install && npm --prefix ./server install",
+    "setup": "npm --prefix ./client install --include=dev && npm --prefix ./server install --include=dev",
     "build": "npm --prefix ./client run build && npm --prefix ./server run build",
     "build-all": "npm run setup && npm run build"
   }
