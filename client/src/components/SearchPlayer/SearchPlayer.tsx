@@ -9,7 +9,6 @@ import {
   Typography,
   Button,
   Divider,
-  Input,
 } from '@mui/material';
 import { useState } from 'react';
 import PersonIcon from '@mui/icons-material/Person';
@@ -17,9 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import { useSnackbar } from '../../hooks/useSnackbar';
 
-type Props = {};
 
-const SearchPlayer = (props: Props) => {
+const SearchPlayer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [players, setPlayers] = useState<{ id: string; username: string }[]>(
     []

@@ -8,7 +8,7 @@ import moveSound from '../assets/sounds/move3.mp3';
 import captureSound from '../assets/sounds/takingPieceMove.mp3';
 
 export function useGameEvents() {
-  const { socket, player } = useSocket(); // Get socket instance from context
+  const { socket } = useSocket(); // Get socket instance from context
   const { gameId } = useParams<{ gameId: string }>();
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export function useGameEvents() {
       setGameState(data);
     });
 
-    socket.on('gameRemoved', (data) => {
+    socket.on('gameRemoved', () => {
       setMessage('Game has been removed redirecting in 5 sec...');
       timeoutId = setTimeout(() => {
         navigate('/');

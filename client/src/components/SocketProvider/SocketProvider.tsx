@@ -8,17 +8,6 @@ import {
 } from '../../features/redux/socketDataSlice';
 import { ISocketContext } from '../../features/contexts/SocketContext';
 import { useSnackbar } from '../../hooks/useSnackbar';
-import {
-  Button,
-  ButtonGroup,
-  IconButton,
-  Paper,
-  Snackbar,
-  Typography,
-} from '@mui/material';
-
-import DoneIcon from '@mui/icons-material/Done';
-import CloseIcon from '@mui/icons-material/Close';
 import InvitationSnackbar from '../InvitationSnackbar/InvitationSnackbar';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,7 +22,7 @@ interface Invitation {
 const SocketProvider = ({ children }: { children: ReactNode }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const gameList = useAppSelector((state) => state.socketData.gamesList);
+  // const gameList = useAppSelector((state) => state.socketData.gamesList);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const { showSnackbar } = useSnackbar();
 

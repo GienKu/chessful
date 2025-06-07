@@ -1,9 +1,6 @@
 import { Typography } from '@mui/material';
-import React from 'react';
 
-type Props = {};
-
-const Profile = (props: Props) => {
+const Profile = () => {
   return <Typography>Profile</Typography>;
 };
 

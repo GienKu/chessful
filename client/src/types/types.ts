@@ -1,4 +1,4 @@
-import { Move, Piece, PieceColor, PieceType, Square } from 'chess.js';
+import { Move, PieceColor, PieceType, Square } from 'chess.js';
 
 export interface User {
   id: string;

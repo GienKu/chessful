@@ -13,7 +13,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { FormEvent, use, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useSocket } from '../../hooks/useSocket';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -85,7 +85,7 @@ const CreateGame = ({ invitedPlayerId, invitedPlayerUsername }: Props) => {
               sx={{ maxWidth: 250 }}
               color="secondary"
               value={minutes}
-              onChange={(e, newValue) => setMinutes(newValue as number)}
+              onChange={(_, newValue) => setMinutes(newValue as number)}
               step={1}
               min={1}
               max={60}
@@ -100,7 +100,7 @@ const CreateGame = ({ invitedPlayerId, invitedPlayerUsername }: Props) => {
               sx={{ maxWidth: 250 }}
               color="secondary"
               value={increment}
-              onChange={(e, newValue) => setIncrement(newValue as number)}
+              onChange={(_, newValue) => setIncrement(newValue as number)}
               step={1}
               min={0}
               max={60}

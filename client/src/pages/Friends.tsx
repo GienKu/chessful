@@ -5,12 +5,10 @@ import FriendsList from '../components/FriendsList/FriendsList';
 import SearchPlayer from '../components/SearchPlayer/SearchPlayer';
 import FriendInvitationList from '../components/FriendInvitationsList/FriendInvitationList';
 
-type Props = {};
-
-const Friends = (props: Props) => {
+const Friends = () => {
   const [value, setValue] = useState('1');
 
-  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+  const handleChange = (_: React.SyntheticEvent, newValue: string) => {
     setValue(newValue);
   };
 

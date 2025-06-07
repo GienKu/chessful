@@ -11,7 +11,7 @@ export const useAuth = () => {
   const dispatch = useAppDispatch();
   const authState = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
-  const { socket, socketRefresh } = useSocket();
+  const { socketRefresh } = useSocket();
 
   const userLogin = (payload: AuthSliceState) => {
     socketRefresh();

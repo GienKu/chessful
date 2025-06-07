@@ -1,4 +1,3 @@
-import { useDispatch, useSelector } from 'react-redux';
 import { useAppDispatch, useAppSelector } from '../features/redux/hooks';
 import {
   clearNotification,

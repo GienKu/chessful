@@ -53,14 +53,14 @@ const AnalyzeGame = () => {
     bestMoveArrow: null,
   });
 
-  const copyActionGame = (
-    game: ChessInstance,
-    callback: (gameCopy: ChessInstance) => void
-  ) => {
-    const gameCopy = { ...game };
-    callback(gameCopy);
-    setGame(gameCopy);
-  };
+  // const copyActionGame = (
+  //   game: ChessInstance,
+  //   callback: (gameCopy: ChessInstance) => void
+  // ) => {
+  //   const gameCopy = { ...game };
+  //   callback(gameCopy);
+  //   setGame(gameCopy);
+  // };
 
   const stoskfishFindBestMove = () => {
     if (!engine.current) {

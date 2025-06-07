@@ -7,7 +7,6 @@ import {
   Paper,
   Stack,
   Switch,
-  ToggleButton,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -17,7 +16,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import BoltIcon from '@mui/icons-material/Bolt';
 import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcutAdd';
 import { FinishedGame } from '../../types/types';
-import { ChessInstance, ShortMove } from 'chess.js';
+import { ChessInstance } from 'chess.js';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import CachedIcon from '@mui/icons-material/Cached';

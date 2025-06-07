@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Paper,
   List,
   ListItem,
-  ListItemIcon,
-  Divider,
   Button,
   Typography,
   Stack,
@@ -19,8 +17,6 @@ import board from '../../assets/chess-board.svg';
 import { FinishedGame } from '../../types/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-
-type Props = {};
 
 const getGameTypeIcon = (type: string) => {
   switch (type) {
@@ -37,7 +33,7 @@ const getGameTypeIcon = (type: string) => {
   }
 };
 
-const PastGames = (props: Props) => {
+const PastGames = () => {
   const {
     authState: { user },
   } = useAuth();

@@ -40,7 +40,7 @@ export class StockfishEngine {
     const infoRegex =
       /^info.*?depth\s+(\d+).*?score\s+cp\s+(-?\d+).*?nodes\s+(\d+).*?pv\s+(.*)$/;
     // Captures: 1=bestmove
-    const bestmoveRegex = /^bestmove\s+(\S+)/;
+    // const bestmoveRegex = /^bestmove\s+(\S+)/;
 
     // --- Try matching the 'info' line ---
     const infoMatch = infoRegex.exec(output);

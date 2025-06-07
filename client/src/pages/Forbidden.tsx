@@ -1,8 +1,6 @@
 import { Container, Paper, Stack, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-type Props = {};
-
 const Forbidden = () => {
   const navigate = useNavigate();
 

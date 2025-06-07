@@ -1,4 +1,3 @@
-import React from 'react';
 import { Paper, Typography, Container } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';

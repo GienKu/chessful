@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Box, TextField, Button, Typography } from '@mui/material';
 
-type Props = {};
 
 const NewPasswordForm = () => {
   const [password, setPassword] = useState('');

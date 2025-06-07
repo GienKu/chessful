@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/server/src/server.js",
     "dev": "nodemon --files src/server.ts"
   },
   "author": "Przemyslaw Szczygiel",

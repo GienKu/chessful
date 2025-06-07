@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Paper,
   List,
   ListItem,
   ListItemIcon,
-  ListItemText,
   Divider,
   Button,
   Typography,
@@ -65,7 +64,7 @@ const FriendsList = (props: Props) => {
         );
 
         if (res.ok) {
-          const { data, message } = await res.json();
+          const { data } = await res.json();
           setFriends(data.userFriends);
         } else {
           console.error('Failed to fetchh Friends:', res.statusText);

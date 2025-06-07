@@ -1,5 +1,5 @@
 import createTheme from '@mui/material/styles/createTheme';
-import { alpha, getContrastRatio, responsiveFontSizes } from '@mui/material';
+import { getContrastRatio } from '@mui/material';
 import { lighten, darken } from '@mui/material/styles';
 
 const getContrastTextColor = (color: string, contrastColor = '#FFFFFF') => {

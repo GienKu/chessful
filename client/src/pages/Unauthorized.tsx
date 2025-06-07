@@ -1,9 +1,7 @@
 import { Button, Container, Paper, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-type Props = {};
-
-const Unauthorized = (props: Props) => {
+const Unauthorized = () => {
   const navigate = useNavigate();
 
   return (
