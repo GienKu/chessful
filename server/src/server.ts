@@ -8,6 +8,7 @@ import { passportConfig } from './config/passport/passport';
 import { Server } from 'socket.io';
 import useWebSockets from './ws';
 import { gameRoutes } from './routes/gameRoutes';
+import { serveStaticFiles } from './routes/default';
 
 if (process.env.NODE_ENV !== 'production') {
   const dotenv = require('dotenv');
@@ -32,6 +33,7 @@ app.use(
 passportConfig(app);
 app.use(userRoutes);
 app.use(gameRoutes);
+serveStaticFiles(app);
 app.use(errorHandler);
 
 server.listen(port, () => {

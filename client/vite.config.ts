@@ -10,4 +10,7 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
   },
+  build: {
+    outDir: '../server/client', // Nested folder inside your project root or relative to vite.config location
+  },
 });

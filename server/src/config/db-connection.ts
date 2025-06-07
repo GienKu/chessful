@@ -8,9 +8,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Connect to MongoDB (adjust URI as needed)
-const MONGODB_URI = process.env.MONGODB_URI;
 
 const connectWithRetry = async () => {
+  const MONGODB_URI = process.env.MONGODB_URI;
   try {
     if (!MONGODB_URI) {
       throw new Error('MONGODB_URI is not defined');
@@ -18,11 +18,13 @@ const connectWithRetry = async () => {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to ' + MONGODB_URI);
   } catch (error) {
-    console.error('Failed to connect to MongoDB, retrying in 5 seconds...', error);
+    console.error(
+      'Failed to connect to MongoDB, retrying in 5 seconds...',
+      error
+    );
     setTimeout(connectWithRetry, 5000);
   }
 };
- 
 
 mongoose.connection.on('disconnected', () => {
   console.warn('MongoDB disconnected! Attempting to reconnect...');
