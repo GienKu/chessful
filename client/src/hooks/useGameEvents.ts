@@ -50,7 +50,6 @@ export function useGameEvents() {
     });
 
     socket.on('moveMade', (move: Move) => {
-      console.log('move made sound');
       if (move.captured) {
         playCaptureSound();
       } else {
@@ -119,7 +118,6 @@ export function useGameEvents() {
     }
   };
   const handleResign = () => {
-    console.log('resign game');
     if (gameState) {
       socket?.emit('resign', {
         gameId: gameState.gameId,

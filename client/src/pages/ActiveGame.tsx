@@ -18,6 +18,7 @@ import wK from '../assets/pieces/wK.svg';
 import wQ from '../assets/pieces/wQ.svg';
 import wR from '../assets/pieces/wR.svg';
 import ActiveGamePanel from '../components/ActiveGamePanel/ActiveGamePanel';
+import { Move } from 'chess.js';
 
 const ActiveGame = () => {
   const { player } = useSocket();
@@ -37,6 +38,10 @@ const ActiveGame = () => {
   const [boardWidth, setBoardWidth] = useState<number>(
     Math.min(window.innerWidth, window.innerHeight) * scale
   );
+
+  const [moveFrom, setMoveFrom] = useState<Square | null>(null);
+  const [moveTo, setMoveTo] = useState<Square | null>(null);
+  const [showPromotionDialog, setShowPromotionDialog] = useState(false);
 
   const boardOrientation =
     player?.id === gameState?.owner?.id
@@ -61,10 +66,32 @@ const ActiveGame = () => {
       styles[gameState.lastMove.to] = {
         backgroundColor: darken('#ffcd038a', 0.2),
       };
+      moveFrom &&
+        (styles[moveFrom] = {
+          backgroundColor: darken('#ffcd038a', 0.2),
+        });
     }
 
     return styles;
   };
+
+  const isPromotionMove = (foundMove: Move) => {
+    return (
+      (foundMove.color === 'w' &&
+        foundMove.piece === 'p' &&
+        foundMove.to[1] === '8') ||
+      (foundMove.color === 'b' &&
+        foundMove.piece === 'p' &&
+        foundMove.to[1] === '1')
+    );
+  };
+
+  const getPlayerColor = () => {
+    return gameState?.owner.id === player?.id
+      ? gameState?.owner.color
+      : gameState?.opponent.color;
+  };
+
   const onPieceDrop = (
     sourceSquare: Square,
     targetSquare: Square,
@@ -78,7 +105,10 @@ const ActiveGame = () => {
 
     const isValidMove =
       gameState?.validMoves.some(
-        (m) => m.from === sourceSquare && m.to === targetSquare
+        (m) =>
+          m.from === sourceSquare &&
+          m.to === targetSquare &&
+          getPlayerColor() === gameState.turn
       ) ?? false;
 
     if (isValidMove) {
@@ -87,6 +117,57 @@ const ActiveGame = () => {
 
     return isValidMove;
   };
+
+  function onSquareClick(square: Square, piece: Piece | undefined) {
+    // from square
+    if (
+      gameState?.validMoves.some(
+        (m) => m.from === square && piece && getPlayerColor() === gameState.turn
+      )
+    ) {
+      setMoveFrom(square);
+      return;
+    }
+
+    // to square
+    const foundMove =
+      gameState?.validMoves.find(
+        (m) => m.from === moveFrom && m.to === square
+      ) ?? false;
+
+    // valid move
+    if (foundMove) {
+      if (isPromotionMove(foundMove)) {
+        setMoveTo(square);
+        setShowPromotionDialog(true);
+        return;
+      }
+      makeMove(foundMove);
+      setMoveFrom(null);
+      setMoveTo(null);
+      return;
+    }
+    return;
+  }
+
+  function onPromotionPieceSelect(
+    piece?: Piece,
+    promoteFromSquare?: Square,
+    promoteToSquare?: Square
+  ) {
+    // if no piece passed then user has cancelled dialog, don't make move and reset
+    if (piece && moveFrom && moveTo) {
+      makeMove({
+        from: moveFrom,
+        to: moveTo,
+        promotion: (piece[1].toLowerCase() ?? 'q') as Promotion,
+      });
+    }
+    setMoveFrom(null);
+    setMoveTo(null);
+    setShowPromotionDialog(false);
+    return true;
+  }
 
   const isPieceDraggable = useCallback(
     (args: { piece: Piece; sourceSquare: Square }) => {
@@ -116,7 +197,7 @@ const ActiveGame = () => {
 
   return (
     <Stack
-    mt={'10px'}
+      mt={'10px'}
       justifyContent={'center'}
       alignItems={'center'}
       direction={{ md: 'column', lg: 'row' }}
@@ -129,6 +210,9 @@ const ActiveGame = () => {
         sx={{ userSelect: 'none' }}
       >
         <Chessboard
+          showPromotionDialog={showPromotionDialog}
+          onPromotionPieceSelect={onPromotionPieceSelect}
+          onSquareClick={onSquareClick}
           animationDuration={
             gameState?.type === 'blitz' || gameState?.type === 'bullet'
               ? 0

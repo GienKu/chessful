@@ -191,7 +191,6 @@ const AnalyzeGame = () => {
           //     copy.load_pgn(data.game.pgn);
           //   });
           originalGame.load_pgn(data.game.pgn);
-          console.log(data.game.pgn);
           setParams((prev) => ({
             ...prev,
             history: originalGame.history({ verbose: true }),

@@ -45,9 +45,7 @@ const ActiveGamePanel = ({
   const move = () => {
     const move = params.history[params.currMoveNum];
     const moveResult = game.move(move);
-    console.log('moveResult', moveResult);
-    console.log('curr', params.currMoveNum);
-    console.log('params', params.history[params.currMoveNum]);
+
     if (moveResult) {
       setParams((prev) => ({
         ...prev,
@@ -58,7 +56,6 @@ const ActiveGamePanel = ({
             : prev.currMoveNum,
       }));
       findBestMove();
-      console.log(game.history());
     }
   };
 
@@ -71,12 +68,10 @@ const ActiveGamePanel = ({
         prev.currMoveNum - 1 < 0 ? prev.currMoveNum : prev.currMoveNum - 1,
     }));
     findBestMove();
-    console.log(game.history());
-    console.log(params.currMoveNum);
+
   };
 
   const handleAnalyzeChange = () => {
-    console.log('doing', !params.isStockfishActive);
 
     if (params.isStockfishActive === false) {
       findBestMove();
