@@ -2,7 +2,7 @@ import path from 'path';
 import express, { Application } from 'express';
 
 // Path to the client/dist folder
-const staticPath = path.join(__dirname, '../../../../client');
+const staticPath = path.join(__dirname, '../../../../clientBuild');
 
 export function serveStaticFiles(app: Application) {
   // Serve static files from client/dist
