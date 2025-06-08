@@ -47,9 +47,12 @@ export const userRegistration = async (
 
     const { username, email, password } = vParse(RegisterSchema, req.body);
 
-    const emailExists = !!(await User.findOne({ email: email }));
-    if (emailExists) {
-      throw new AppError('Email already exists', 400);
+    const emailOrUsernameExists = !!(await User.findOne({
+      $or: [{ email: email }, { username: username }],
+    }));
+
+    if (emailOrUsernameExists) {
+      throw new AppError('Email or username already exists', 400);
     }
 
     // create user
@@ -57,7 +60,7 @@ export const userRegistration = async (
       username,
       email,
       password: await hashPassword(password),
-    }).save();
+    });
 
     // create token to immediately login user
     const token = generateJwtToken({
@@ -79,6 +82,7 @@ export const userRegistration = async (
       `${BASE_URL}/api/verify-email?token=${emailToken}`
     );
 
+    await user.save();
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: true,
