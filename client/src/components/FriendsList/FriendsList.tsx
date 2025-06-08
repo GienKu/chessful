@@ -67,10 +67,10 @@ const FriendsList = (props: Props) => {
           const { data } = await res.json();
           setFriends(data.userFriends);
         } else {
-          console.error('Failed to fetchh Friends:', res.statusText);
+          // console.error('Failed to fetchh Friends:', res.statusText);
         }
       } catch (error) {
-        console.error('An error occurred while fetching Friends:', error);
+        // console.error('An error occurred while fetching Friends:', error);
       }
     };
 

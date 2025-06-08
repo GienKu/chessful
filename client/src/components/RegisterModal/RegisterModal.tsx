@@ -102,7 +102,6 @@ const RegisterModal = ({ open, setOpen }: Props) => {
       );
 
       if (response.ok) {
-        console.log('Registration successful');
         setOpen(false);
       } else {
         const errorData: ApiErrorResponse = await response.json();

@@ -11,6 +11,6 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../server/client', // Nested folder inside your project root or relative to vite.config location
+    outDir: '../server/clientBuild', // Nested folder inside your project root or relative to vite.config location
   },
 });

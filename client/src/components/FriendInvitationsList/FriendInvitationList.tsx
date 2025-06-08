@@ -81,10 +81,10 @@ const FriendInvitationList = (props: Props) => {
           const { data } = await res.json();
           setInvitations(data.invitations);
         } else {
-          console.error('Failed to fetchh Invitations:', res.statusText);
+          // console.error('Failed to fetchh Invitations:', res.statusText);
         }
       } catch (error) {
-        console.error('An error occurred while fetching Invitations:', error);
+        // console.error('An error occurred while fetching Invitations:', error);
       }
     };
 

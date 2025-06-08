@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Piece, Square } from 'react-chessboard/dist/chessboard/types';
 import { Stack, Box, darken } from '@mui/material';
@@ -43,12 +43,13 @@ const ActiveGame = () => {
   const [moveTo, setMoveTo] = useState<Square | null>(null);
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
 
-  const boardOrientation =
-    player?.id === gameState?.owner?.id
+  const boardOrientation = useMemo(() => {
+    return player?.id === gameState?.owner?.id
       ? gameState?.owner?.color
       : gameState?.opponent?.color;
+  }, [player, gameState]);
 
-  const customPiecesStyle = () => {
+  const customPiecesStyle = useCallback(() => {
     if (!gameState) return {};
 
     const styles: { [key: string]: React.CSSProperties } = {};
@@ -73,24 +74,13 @@ const ActiveGame = () => {
     }
 
     return styles;
-  };
+  }, [gameState, moveFrom]);
 
-  const isPromotionMove = (foundMove: Move) => {
-    return (
-      (foundMove.color === 'w' &&
-        foundMove.piece === 'p' &&
-        foundMove.to[1] === '8') ||
-      (foundMove.color === 'b' &&
-        foundMove.piece === 'p' &&
-        foundMove.to[1] === '1')
-    );
-  };
-
-  const getPlayerColor = () => {
+  const getPlayerColor = useCallback(() => {
     return gameState?.owner.id === player?.id
       ? gameState?.owner.color
       : gameState?.opponent.color;
-  };
+  }, [gameState, player]);
 
   const onPieceDrop = (
     sourceSquare: Square,
@@ -118,56 +108,59 @@ const ActiveGame = () => {
     return isValidMove;
   };
 
-  function onSquareClick(square: Square, piece: Piece | undefined) {
-    // from square
-    if (
-      gameState?.validMoves.some(
-        (m) => m.from === square && piece && getPlayerColor() === gameState.turn
-      )
-    ) {
-      setMoveFrom(square);
-      return;
-    }
-
-    // to square
-    const foundMove =
-      gameState?.validMoves.find(
-        (m) => m.from === moveFrom && m.to === square
-      ) ?? false;
-
-    // valid move
-    if (foundMove) {
-      if (isPromotionMove(foundMove)) {
-        setMoveTo(square);
-        setShowPromotionDialog(true);
+  const onSquareClick = useCallback(
+    (square: Square, piece: Piece | undefined) => {
+      // from square
+      if (
+        gameState?.validMoves.some(
+          (m) =>
+            m.from === square && piece && getPlayerColor() === gameState.turn
+        )
+      ) {
+        setMoveFrom(square);
         return;
       }
-      makeMove(foundMove);
+
+      // to square
+      const foundMove =
+        gameState?.validMoves.find(
+          (m) => m.from === moveFrom && m.to === square
+        ) ?? false;
+
+      // valid move
+      if (foundMove) {
+        if (isPromotionMove(foundMove)) {
+          setMoveTo(square);
+          setShowPromotionDialog(true);
+          return;
+        }
+        makeMove(foundMove);
+        setMoveFrom(null);
+        setMoveTo(null);
+        return;
+      }
+      return;
+    },
+    [gameState, moveFrom, getPlayerColor, isPromotionMove, makeMove]
+  );
+
+  const onPromotionPieceSelect = useCallback(
+    (piece?: Piece, promoteFromSquare?: Square, promoteToSquare?: Square) => {
+      // if no piece passed then user has cancelled dialog, don't make move and reset
+      if (piece && moveFrom && moveTo) {
+        makeMove({
+          from: moveFrom,
+          to: moveTo,
+          promotion: (piece[1].toLowerCase() ?? 'q') as Promotion,
+        });
+      }
       setMoveFrom(null);
       setMoveTo(null);
-      return;
-    }
-    return;
-  }
-
-  function onPromotionPieceSelect(
-    piece?: Piece,
-    promoteFromSquare?: Square,
-    promoteToSquare?: Square
-  ) {
-    // if no piece passed then user has cancelled dialog, don't make move and reset
-    if (piece && moveFrom && moveTo) {
-      makeMove({
-        from: moveFrom,
-        to: moveTo,
-        promotion: (piece[1].toLowerCase() ?? 'q') as Promotion,
-      });
-    }
-    setMoveFrom(null);
-    setMoveTo(null);
-    setShowPromotionDialog(false);
-    return true;
-  }
+      setShowPromotionDialog(false);
+      return true;
+    },
+    [moveFrom, moveTo, makeMove]
+  );
 
   const isPieceDraggable = useCallback(
     (args: { piece: Piece; sourceSquare: Square }) => {
@@ -252,6 +245,17 @@ const ActiveGame = () => {
         handleRematchResponse={handleRematchResponse}
       />
     </Stack>
+  );
+};
+
+const isPromotionMove = (foundMove: Move) => {
+  return (
+    (foundMove.color === 'w' &&
+      foundMove.piece === 'p' &&
+      foundMove.to[1] === '8') ||
+    (foundMove.color === 'b' &&
+      foundMove.piece === 'p' &&
+      foundMove.to[1] === '1')
   );
 };
 

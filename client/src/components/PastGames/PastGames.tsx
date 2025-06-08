@@ -59,11 +59,12 @@ const PastGames = () => {
         );
         if (!res.ok) {
           console.error(res.statusText);
+          return;
         }
         const { data } = await res.json();
         setGames(data.games);
       } catch (error) {
-        console.error('Error fetching games:', error);
+        // console.error('Error fetching games:', error);
       }
     };
 
@@ -117,6 +118,18 @@ const PastGames = () => {
               Log in to view your games.
             </Typography>
           </Box>
+        </Box>
+      ) : games.length === 0 ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100%"
+          padding="20px"
+        >
+          <Typography variant="body1" color="text.secondary">
+            No games to display.
+          </Typography>
         </Box>
       ) : (
         <List
@@ -207,11 +220,6 @@ const PastGames = () => {
               </Stack>
             </ListItem>
           ))}
-          {/* <ListItem sx={{ justifyContent: 'center' }}>
-            <Button variant="text" size="small" color="primary">
-              More
-            </Button>
-          </ListItem> */}
         </List>
       )}
     </Paper>

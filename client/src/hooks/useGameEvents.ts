@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSocket } from './useSocket';
 import { GameState, Promotion } from '../types/types';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -18,7 +18,6 @@ export function useGameEvents() {
   });
   const [playMoveSound] = useAudio(moveSound);
   const [playCaptureSound] = useAudio(captureSound);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,15 +95,15 @@ export function useGameEvents() {
   }, [socket, navigate, gameId]);
 
   // EMITTING EVENTS
-  const makeMove = async (move: {
-    from: Square;
-    to: Square;
-    promotion?: Promotion;
-  }) => {
-    if (gameState) socket?.emit('makeMove', { gameId: gameState.gameId, move });
-  };
+  const makeMove = useCallback(
+    async (move: { from: Square; to: Square; promotion?: Promotion }) => {
+      if (gameState)
+        socket?.emit('makeMove', { gameId: gameState.gameId, move });
+    },
+    [gameState, socket]
+  );
 
-  const handleLeavingGame = () => {
+  const handleLeavingGame = useCallback(() => {
     if (gameState) {
       socket?.emit(
         'removePlayerFromTable',
@@ -116,48 +115,55 @@ export function useGameEvents() {
         }
       );
     }
-  };
-  const handleResign = () => {
+  }, [gameState, socket, navigate]);
+
+  const handleResign = useCallback(() => {
     if (gameState) {
       socket?.emit('resign', {
         gameId: gameState.gameId,
       });
     }
-  };
+  }, [gameState, socket]);
 
-  const handleOfferDraw = () => {
+  const handleOfferDraw = useCallback(() => {
     if (gameState) {
       socket?.emit('offerDraw', {
         gameId: gameState.gameId,
       });
     }
-  };
+  }, [gameState, socket]);
 
-  const handleOfferDrawResponse = (isAccepted: boolean) => {
-    if (gameState) {
-      socket?.emit('offerDrawResponse', {
-        gameId: gameState.gameId,
-        isAccepted,
-      });
-    }
-  };
+  const handleOfferDrawResponse = useCallback(
+    (isAccepted: boolean) => {
+      if (gameState) {
+        socket?.emit('offerDrawResponse', {
+          gameId: gameState.gameId,
+          isAccepted,
+        });
+      }
+    },
+    [gameState, socket]
+  );
 
-  const handleRematchOffer = () => {
+  const handleRematchOffer = useCallback(() => {
     if (gameState) {
       socket?.emit('offerRematch', {
         gameId: gameState.gameId,
       });
     }
-  };
+  }, [gameState, socket]);
 
-  const handleRematchResponse = (isAccepted: boolean) => {
-    if (gameState) {
-      socket?.emit('offerRematchResponse', {
-        gameId: gameState.gameId,
-        isAccepted,
-      });
-    }
-  };
+  const handleRematchResponse = useCallback(
+    (isAccepted: boolean) => {
+      if (gameState) {
+        socket?.emit('offerRematchResponse', {
+          gameId: gameState.gameId,
+          isAccepted,
+        });
+      }
+    },
+    [gameState, socket]
+  );
 
   return {
     gameState,

@@ -51,10 +51,10 @@ export const useAuth = () => {
         const data = await res.json();
         dispatch(setUser(data.data));
       } else {
-        console.error('Failed to fetch user data');
+        // console.error('Failed to fetch user data');
       }
     } catch (error) {
-      console.error('An error occurred while fetching user data:', error);
+      // console.error('An error occurred while fetching user data:', error);
     }
   };
 
