@@ -49,11 +49,22 @@ export class GameService {
       color: 'w' | 'b';
       ranked: boolean;
       invitedPlayerId?: string;
+      playAgainstComputer?: boolean;
+      computerLevel?: number;
+      engineDepth?: number;
     },
     socket: Socket,
     response: (gameId: string) => void
   ) {
-    const { tempo, color, ranked, invitedPlayerId } = data;
+    const {
+      tempo,
+      color,
+      ranked,
+      invitedPlayerId,
+      playAgainstComputer,
+      computerLevel,
+      engineDepth,
+    } = data;
 
     if (invitedPlayerId && !this.activePlayers.has(invitedPlayerId)) {
       this.emitError(socket, 'Player is not online');
@@ -84,7 +95,9 @@ export class GameService {
         color,
         connected: true,
       },
-      !!invitedPlayerId
+      !!invitedPlayerId,
+      playAgainstComputer ? computerLevel : undefined,
+      playAgainstComputer ? engineDepth : undefined
     );
 
     this.activeGames.set(game.id, game);
@@ -427,7 +440,8 @@ export class GameService {
   // EMITTING EVENTS
 
   emitMoveMade(gameId: string, move: Move) {
-    this.io.to(gameId).emit('moveMade', move);
+    const state = this.activeGames.get(gameId)?.getState();
+    this.io.to(gameId).emit('moveMade', move, state);
   }
 
   emitError(socket: Socket, message: string) {
@@ -478,7 +492,6 @@ export class GameService {
       return;
     }
     const games = this.getPlayerGames(user.id);
-    console.log(games);
     if (games.length > 0) {
       socket.emit('playerGames', games);
       return;
@@ -627,7 +640,15 @@ export class GameService {
   registerEventHandlers(socket: Socket) {
     const listeners = {
       createGame: (
-        data: { tempo: Tempo; color: 'w' | 'b'; ranked: boolean },
+        data: {
+          tempo: Tempo;
+          color: 'w' | 'b';
+          ranked: boolean;
+          invitedPlayerId?: string;
+          playAgainstComputer?: boolean;
+          computerLevel?: number;
+          engineDepth?: number;
+        },
         response: (gameId: string) => void
       ) => {
         console.log('createGame event by', socket.user?.id || socket.guest?.id);

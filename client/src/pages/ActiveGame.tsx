@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Piece, Square } from 'react-chessboard/dist/chessboard/types';
 import { Stack, Box, darken } from '@mui/material';
@@ -38,7 +38,6 @@ const ActiveGame = () => {
   const [boardWidth, setBoardWidth] = useState<number>(
     Math.min(window.innerWidth, window.innerHeight) * scale
   );
-
   const [moveFrom, setMoveFrom] = useState<Square | null>(null);
   const [moveTo, setMoveTo] = useState<Square | null>(null);
   const [showPromotionDialog, setShowPromotionDialog] = useState(false);
@@ -76,11 +75,11 @@ const ActiveGame = () => {
     return styles;
   }, [gameState, moveFrom]);
 
-  const getPlayerColor = useCallback(() => {
+  const getPlayerColor = () => {
     return gameState?.owner.id === player?.id
       ? gameState?.owner.color
       : gameState?.opponent.color;
-  }, [gameState, player]);
+  };
 
   const onPieceDrop = (
     sourceSquare: Square,
@@ -128,7 +127,7 @@ const ActiveGame = () => {
         ) ?? false;
 
       // valid move
-      if (foundMove) {
+      if (foundMove && gameState?.opponent) {
         if (isPromotionMove(foundMove)) {
           setMoveTo(square);
           setShowPromotionDialog(true);

@@ -37,22 +37,40 @@ export class Game {
   whoDisconnected: 'w' | 'b' | null = null;
   whoResigned: 'w' | 'b' | null = null;
   rematchOfferedById: string | null = null;
+  againstComputer: boolean = false;
+  skillLevel: number | null = null;
+  engineDepth: number | null = null;
 
   constructor(
     tempo: Tempo,
     ranked: boolean,
     type: GameType,
     owner: Player,
-    privateGame: boolean = false
+    privateGame: boolean = false,
+    skillLevel?: number,
+    engineDepth?: number
   ) {
     this.game = new Chess();
     this.owner = owner;
     this.tempo = tempo;
     this.setTimer(tempo);
     this.type = type;
-    this.ranked = ranked;
+    this.ranked = skillLevel ? false : ranked;
     this.privateGame = privateGame;
     this.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    if (skillLevel && engineDepth) {
+      this.againstComputer = true;
+      this.skillLevel = skillLevel;
+      this.engineDepth = engineDepth;
+      this.addOpponent({
+        id: 'computer',
+        username: 'Computer',
+        color: owner.color === 'w' ? 'b' : 'w',
+        rating: null,
+        connected: true,
+      });
+    }
   }
 
   private setTimer(tempo: Tempo) {
@@ -107,6 +125,9 @@ export class Game {
       lastMove:
         history.length >= 1 &&
         this.game.history({ verbose: true })[history.length - 1],
+      againstComputer: this.againstComputer,
+      skillLevel: this.skillLevel,
+      engineDepth: this.engineDepth,
     };
   }
 

@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "Debug TypeScript Express",
+      "runtimeArgs": ["--require", "ts-node/register"],
+      "program": "${workspaceFolder}/server/src/server.ts",
+      "env": {
+        "DEBUG": "myapp"
+      },
+      "skipFiles": ["<node_internals>/**"],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    }
+  ]
+}

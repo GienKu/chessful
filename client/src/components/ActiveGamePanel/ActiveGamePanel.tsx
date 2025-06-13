@@ -52,6 +52,8 @@ const ActiveGamePanel = (props: Props) => {
   const [confirmResign, setConfirmResign] = useState<boolean>(false);
   const timeoutRef = useRef<number | null>(null);
 
+
+
   const displayInGameInfo = useCallback(() => {
     const gs = gameState;
     if (gs?.gameOver) {

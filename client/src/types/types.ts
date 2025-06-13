@@ -58,6 +58,9 @@ export interface GameState {
   validMoves: Move[];
   lastMove?: Move;
   rematchOfferedById: string | null;
+  againstComputer: boolean;
+  skillLevel: number | null;
+  engineDepth: number | null;
 }
 
 export interface FinishedGame {
